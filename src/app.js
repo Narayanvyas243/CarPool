@@ -1,0 +1,19 @@
+const express = require("express");
+const app = express();
+
+app.use(express.json());
+
+// Routes
+const rideRoutes = require("./routes/rideRoutes");
+app.use("/api/rides", rideRoutes);
+
+// User routes
+const userRoutes = require("./routes/userRoutes");
+app.use("/api/users", userRoutes);
+
+// Test route
+app.get("/", (req, res) => {
+  res.send("SmartPool Backend Running");
+});
+
+module.exports = app;
