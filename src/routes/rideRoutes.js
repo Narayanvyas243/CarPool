@@ -90,6 +90,64 @@ router.get("/search", async (req, res) => {
   }
 });
 
+// MY RIDES DASHBOARD
+// Keep this route above "/:id" so "dashboard" is not treated as a ride id.
+// Returns:
+// 1) rides created by me
+// 2) rides where my request got accepted (booked rides)
+// 3) pending requests received on my created rides
+router.get("/dashboard/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const createdRides = await Ride.find({ createdBy: userId }).populate(RIDE_POPULATE);
+
+    const bookedRides = await Ride.find({
+      "requests.requester": userId,
+      "requests.status": "accepted"
+    }).populate(RIDE_POPULATE);
+
+    // Pending requests the ride owner needs to approve/reject.
+    const ownerRidesWithPending = await Ride.find({
+      createdBy: userId,
+      "requests.status": "pending"
+    }).populate(RIDE_POPULATE);
+
+    const pendingRequests = ownerRidesWithPending.flatMap((ride) =>
+      ride.requests
+        .filter((request) => request.status === "pending")
+        .map((request) => ({
+          rideId: ride._id,
+          fromLocation: ride.fromLocation,
+          toLocation: ride.toLocation,
+          time: ride.time,
+          seatsRequested: request.seatsRequested,
+          requestId: request._id,
+          requester: request.requester
+        }))
+    );
+
+    res.status(200).json({
+      message: "Dashboard fetched successfully",
+      dashboard: {
+        createdRides,
+        bookedRides,
+        pendingRequests
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching dashboard",
+      error: error.message
+    });
+  }
+});
+
 // GET RIDE BY ID
 router.get("/:id", async (req, res) => {
   try {
@@ -249,63 +307,6 @@ router.patch("/:rideId/requests/:requestId", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error updating ride request",
-      error: error.message
-    });
-  }
-});
-
-// MY RIDES DASHBOARD
-// Returns:
-// 1) rides created by me
-// 2) rides where my request got accepted (booked rides)
-// 3) pending requests received on my created rides
-router.get("/dashboard/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const createdRides = await Ride.find({ createdBy: userId }).populate(RIDE_POPULATE);
-
-    const bookedRides = await Ride.find({
-      "requests.requester": userId,
-      "requests.status": "accepted"
-    }).populate(RIDE_POPULATE);
-
-    // Pending requests the ride owner needs to approve/reject.
-    const ownerRidesWithPending = await Ride.find({
-      createdBy: userId,
-      "requests.status": "pending"
-    }).populate(RIDE_POPULATE);
-
-    const pendingRequests = ownerRidesWithPending.flatMap((ride) =>
-      ride.requests
-        .filter((request) => request.status === "pending")
-        .map((request) => ({
-          rideId: ride._id,
-          fromLocation: ride.fromLocation,
-          toLocation: ride.toLocation,
-          time: ride.time,
-          seatsRequested: request.seatsRequested,
-          requestId: request._id,
-          requester: request.requester
-        }))
-    );
-
-    res.status(200).json({
-      message: "Dashboard fetched successfully",
-      dashboard: {
-        createdRides,
-        bookedRides,
-        pendingRequests
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error fetching dashboard",
       error: error.message
     });
   }
