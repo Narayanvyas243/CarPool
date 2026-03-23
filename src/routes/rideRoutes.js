@@ -3,6 +3,10 @@ const Ride = require("../models/Ride");
 const User = require("../models/User");
 
 const router = express.Router();
+const RIDE_POPULATE = [
+  { path: "createdBy", select: "name email role gender" },
+  { path: "requests.requester", select: "name email role gender" }
+];
 
 // CREATE RIDE
 router.post("/create", async (req, res) => {
@@ -23,10 +27,7 @@ router.post("/create", async (req, res) => {
     }
 
     const ride = await Ride.create(req.body);
-    const populatedRide = await Ride.findById(ride._id).populate(
-      "createdBy",
-      "name email role gender"
-    );
+    const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
 
     res.status(201).json({
       message: "Ride created successfully",
@@ -44,7 +45,7 @@ router.post("/create", async (req, res) => {
 // GET ALL RIDES
 router.get("/all", async (req, res) => {
   try {
-    const rides = await Ride.find().populate("createdBy", "name email role gender");
+    const rides = await Ride.find().populate(RIDE_POPULATE);
 
     res.status(200).json({
       message: "Rides fetched successfully",
@@ -74,7 +75,7 @@ router.get("/search", async (req, res) => {
       filter.toLocation = new RegExp(to, "i");
     }
 
-    const rides = await Ride.find(filter).populate("createdBy", "name email role gender");
+    const rides = await Ride.find(filter).populate(RIDE_POPULATE);
 
     res.status(200).json({
       message: "Filtered rides fetched successfully",
@@ -92,10 +93,7 @@ router.get("/search", async (req, res) => {
 // GET RIDE BY ID
 router.get("/:id", async (req, res) => {
   try {
-    const ride = await Ride.findById(req.params.id).populate(
-      "createdBy",
-      "name email role gender"
-    );
+    const ride = await Ride.findById(req.params.id).populate(RIDE_POPULATE);
 
     if (!ride) {
       return res.status(404).json({ message: "Ride not found" });
@@ -127,7 +125,7 @@ router.put("/:id", async (req, res) => {
       req.params.id,
       req.body,
       { new: true }
-    ).populate("createdBy", "name email role gender");
+    ).populate(RIDE_POPULATE);
 
     if (!ride) {
       return res.status(404).json({ message: "Ride not found" });
@@ -141,6 +139,173 @@ router.put("/:id", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error updating ride",
+      error: error.message
+    });
+  }
+});
+
+// REQUEST A SEAT ON A RIDE
+router.post("/:rideId/request", async (req, res) => {
+  try {
+    const { requesterId, seatsRequested = 1 } = req.body;
+    const { rideId } = req.params;
+
+    if (!requesterId) {
+      return res.status(400).json({ message: "requesterId is required" });
+    }
+
+    const requester = await User.findById(requesterId);
+    if (!requester) {
+      return res.status(404).json({ message: "Requester not found" });
+    }
+
+    const ride = await Ride.findById(rideId);
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    // Driver should not request seat in their own ride.
+    if (String(ride.createdBy) === String(requesterId)) {
+      return res.status(400).json({ message: "Ride owner cannot request own ride" });
+    }
+
+    const hasPendingOrAccepted = ride.requests.some(
+      (r) =>
+        String(r.requester) === String(requesterId) &&
+        ["pending", "accepted"].includes(r.status)
+    );
+    if (hasPendingOrAccepted) {
+      return res.status(400).json({
+        message: "You already have a pending/accepted request for this ride"
+      });
+    }
+
+    ride.requests.push({
+      requester: requesterId,
+      seatsRequested: Number(seatsRequested) || 1
+    });
+
+    await ride.save();
+    const updatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+
+    res.status(201).json({
+      message: "Ride request submitted successfully",
+      ride: updatedRide
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error submitting ride request",
+      error: error.message
+    });
+  }
+});
+
+// ACCEPT OR REJECT A RIDE REQUEST (ONLY RIDE OWNER)
+router.patch("/:rideId/requests/:requestId", async (req, res) => {
+  try {
+    const { rideId, requestId } = req.params;
+    const { action, ownerId } = req.body;
+
+    if (!["accept", "reject"].includes(action)) {
+      return res.status(400).json({ message: "action must be accept or reject" });
+    }
+
+    const ride = await Ride.findById(rideId);
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    if (!ownerId || String(ride.createdBy) !== String(ownerId)) {
+      return res.status(403).json({ message: "Only ride owner can manage requests" });
+    }
+
+    const request = ride.requests.id(requestId);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (request.status !== "pending") {
+      return res.status(400).json({ message: "Only pending requests can be updated" });
+    }
+
+    if (action === "accept") {
+      // Protect against overbooking at acceptance time.
+      if (ride.seatsAvailable < request.seatsRequested) {
+        return res.status(400).json({ message: "Not enough seats available" });
+      }
+      request.status = "accepted";
+      ride.seatsAvailable -= request.seatsRequested;
+    } else {
+      request.status = "rejected";
+    }
+
+    await ride.save();
+    const updatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+
+    res.status(200).json({
+      message: `Request ${action}ed successfully`,
+      ride: updatedRide
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating ride request",
+      error: error.message
+    });
+  }
+});
+
+// MY RIDES DASHBOARD
+// Returns:
+// 1) rides created by me
+// 2) rides where my request got accepted (booked rides)
+// 3) pending requests received on my created rides
+router.get("/dashboard/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const createdRides = await Ride.find({ createdBy: userId }).populate(RIDE_POPULATE);
+
+    const bookedRides = await Ride.find({
+      "requests.requester": userId,
+      "requests.status": "accepted"
+    }).populate(RIDE_POPULATE);
+
+    // Pending requests the ride owner needs to approve/reject.
+    const ownerRidesWithPending = await Ride.find({
+      createdBy: userId,
+      "requests.status": "pending"
+    }).populate(RIDE_POPULATE);
+
+    const pendingRequests = ownerRidesWithPending.flatMap((ride) =>
+      ride.requests
+        .filter((request) => request.status === "pending")
+        .map((request) => ({
+          rideId: ride._id,
+          fromLocation: ride.fromLocation,
+          toLocation: ride.toLocation,
+          time: ride.time,
+          seatsRequested: request.seatsRequested,
+          requestId: request._id,
+          requester: request.requester
+        }))
+    );
+
+    res.status(200).json({
+      message: "Dashboard fetched successfully",
+      dashboard: {
+        createdRides,
+        bookedRides,
+        pendingRequests
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching dashboard",
       error: error.message
     });
   }

@@ -1,5 +1,28 @@
 const mongoose = require("mongoose");
 
+// Each student/faculty seat request is stored here.
+const rideRequestSchema = new mongoose.Schema({
+  requester: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  seatsRequested: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "rejected"],
+    default: "pending"
+  },
+  requestedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: true });
+
 const rideSchema = new mongoose.Schema({
   fromLocation: {
     type: String,
@@ -21,12 +44,19 @@ const rideSchema = new mongoose.Schema({
     type: Date
   },
   seatsAvailable: {
-    type: Number
+    type: Number,
+    required: true,
+    min: 1
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true
+  },
+  // Keeps all incoming booking requests for this ride.
+  requests: {
+    type: [rideRequestSchema],
+    default: []
   }
 });
 
