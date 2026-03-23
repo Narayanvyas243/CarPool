@@ -3,13 +3,18 @@ require("dotenv").config();
 const connectDB = require("./src/config/db");
 const app = require("./src/app");
 
-console.log("EMAIL_USER:", process.env.EMAIL_USER);
-console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
+const PORT = process.env.PORT || 5000;
 
-connectDB();
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Server startup failed because database connection failed.");
+    process.exit(1);
+  }
+};
 
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+startServer();
