@@ -10,7 +10,7 @@ const router = express.Router();
 ================================= */
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, gender } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -34,6 +34,13 @@ router.post("/signup", async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const normalizedGender = gender?.toLowerCase();
+    if (!["male", "female"].includes(normalizedGender)) {
+      return res.status(400).json({
+        message: "Invalid gender. Use male or female."
+      });
+    }
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -44,6 +51,7 @@ router.post("/signup", async (req, res) => {
       password: hashedPassword,
       phone,
       role,
+      gender: normalizedGender,
       otp,
       otpExpiry: Date.now() + 5 * 60 * 1000, // 5 minutes
       isVerified: false
@@ -136,7 +144,8 @@ router.post("/login", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        gender: user.gender
       }
     });
 

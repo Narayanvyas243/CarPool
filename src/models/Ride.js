@@ -22,6 +22,11 @@ const rideSchema = new mongoose.Schema({
   },
   seatsAvailable: {
     type: Number
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
   }
 });
 

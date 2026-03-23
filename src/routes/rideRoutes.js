@@ -1,16 +1,36 @@
 const express = require("express");
 const Ride = require("../models/Ride");
+const User = require("../models/User");
 
 const router = express.Router();
 
 // CREATE RIDE
 router.post("/create", async (req, res) => {
   try {
+    const { createdBy } = req.body;
+
+    if (!createdBy) {
+      return res.status(400).json({
+        message: "createdBy (user id) is required"
+      });
+    }
+
+    const user = await User.findById(createdBy);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found for this ride"
+      });
+    }
+
     const ride = await Ride.create(req.body);
+    const populatedRide = await Ride.findById(ride._id).populate(
+      "createdBy",
+      "name email role gender"
+    );
 
     res.status(201).json({
       message: "Ride created successfully",
-      ride
+      ride: populatedRide
     });
 
   } catch (error) {
@@ -24,7 +44,7 @@ router.post("/create", async (req, res) => {
 // GET ALL RIDES
 router.get("/all", async (req, res) => {
   try {
-    const rides = await Ride.find();
+    const rides = await Ride.find().populate("createdBy", "name email role gender");
 
     res.status(200).json({
       message: "Rides fetched successfully",
@@ -54,7 +74,7 @@ router.get("/search", async (req, res) => {
       filter.toLocation = new RegExp(to, "i");
     }
 
-    const rides = await Ride.find(filter);
+    const rides = await Ride.find(filter).populate("createdBy", "name email role gender");
 
     res.status(200).json({
       message: "Filtered rides fetched successfully",
@@ -72,7 +92,10 @@ router.get("/search", async (req, res) => {
 // GET RIDE BY ID
 router.get("/:id", async (req, res) => {
   try {
-    const ride = await Ride.findById(req.params.id);
+    const ride = await Ride.findById(req.params.id).populate(
+      "createdBy",
+      "name email role gender"
+    );
 
     if (!ride) {
       return res.status(404).json({ message: "Ride not found" });
@@ -91,11 +114,20 @@ router.get("/:id", async (req, res) => {
 // UPDATE RIDE
 router.put("/:id", async (req, res) => {
   try {
+    if (req.body.createdBy) {
+      const user = await User.findById(req.body.createdBy);
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found for this ride"
+        });
+      }
+    }
+
     const ride = await Ride.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
-    );
+    ).populate("createdBy", "name email role gender");
 
     if (!ride) {
       return res.status(404).json({ message: "Ride not found" });
