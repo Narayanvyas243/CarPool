@@ -277,9 +277,16 @@ router.patch("/:rideId/requests/:requestId", async (req, res) => {
       return res.status(403).json({ message: "Only ride owner can manage requests" });
     }
 
-    const request = ride.requests.id(requestId);
+    // Use string-safe matching so both ObjectId/string formats work reliably.
+    const normalizedRequestId = String(requestId).trim();
+    const request = ride.requests.find(
+      (r) => String(r._id) === normalizedRequestId
+    );
     if (!request) {
-      return res.status(404).json({ message: "Request not found" });
+      return res.status(404).json({
+        message: "Request not found",
+        availableRequestIds: ride.requests.map((r) => String(r._id))
+      });
     }
 
     if (request.status !== "pending") {
