@@ -1,6 +1,11 @@
 const express = require("express");
 const Ride = require("../models/Ride");
 const User = require("../models/User");
+const { createAndSendNotification } = require("../services/notificationService");
+const {
+  scheduleRideLifecycleNotifications,
+  clearRideTimers
+} = require("../services/rideEventScheduler");
 
 const router = express.Router();
 const RIDE_POPULATE = [
@@ -28,6 +33,7 @@ router.post("/create", async (req, res) => {
 
     const ride = await Ride.create(req.body);
     const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+    await scheduleRideLifecycleNotifications(populatedRide);
 
     res.status(201).json({
       message: "Ride created successfully",
@@ -189,6 +195,8 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "Ride not found" });
     }
 
+    await scheduleRideLifecycleNotifications(ride);
+
     res.status(200).json({
       message: "Ride updated successfully",
       ride
@@ -245,6 +253,15 @@ router.post("/:rideId/request", async (req, res) => {
 
     await ride.save();
     const updatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+
+    // Notify the ride owner that a new request has arrived.
+    await createAndSendNotification({
+      userId: ride.createdBy,
+      type: "ride_request_received",
+      title: "New ride request",
+      message: `${requester.name} requested ${Number(seatsRequested) || 1} seat(s) for your ride.`,
+      meta: { rideId: ride._id, requestId: ride.requests[ride.requests.length - 1]._id }
+    });
 
     res.status(201).json({
       message: "Ride request submitted successfully",
@@ -306,6 +323,19 @@ router.patch("/:rideId/requests/:requestId", async (req, res) => {
 
     await ride.save();
     const updatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+    await scheduleRideLifecycleNotifications(updatedRide);
+
+    // Notify requester about final owner decision.
+    await createAndSendNotification({
+      userId: request.requester,
+      type: action === "accept" ? "ride_request_accepted" : "ride_request_rejected",
+      title: action === "accept" ? "Ride request accepted" : "Ride request rejected",
+      message:
+        action === "accept"
+          ? `Your request was accepted for ride ${ride.fromLocation} to ${ride.toLocation}.`
+          : `Your request was rejected for ride ${ride.fromLocation} to ${ride.toLocation}.`,
+      meta: { rideId: ride._id, requestId: request._id }
+    });
 
     res.status(200).json({
       message: `Request ${action}ed successfully`,
@@ -327,6 +357,8 @@ router.delete("/:id", async (req, res) => {
     if (!ride) {
       return res.status(404).json({ message: "Ride not found" });
     }
+
+    clearRideTimers(req.params.id);
 
     res.status(200).json({ message: "Ride deleted successfully" });
 
