@@ -145,13 +145,34 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        gender: user.gender
+        gender: user.gender,
+        phone: user.phone
       }
     });
 
   } catch (error) {
     res.status(500).json({
       message: "Login failed",
+      error: error.message
+    });
+  }
+});
+
+/* ==============================
+   GET USER
+================================= */
+router.get("/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password -otp -otpExpiry");
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching user details",
       error: error.message
     });
   }

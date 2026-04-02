@@ -241,7 +241,7 @@ const RideDetails = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Price per seat</p>
-                  <p className="text-2xl font-bold text-foreground">₹50</p>
+                  <p className="text-2xl font-bold text-foreground">₹{ride.price !== undefined ? ride.price : 50}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -271,7 +271,7 @@ const RideDetails = () => {
             ) : ride.seatsAvailable === 0 ? (
               "Fully Booked"
             ) : (
-              <>Request Seat • ₹50</>
+              <>Request Seat • ₹{ride.price !== undefined ? ride.price : 50}</>
             )}
           </Button>
         </div>

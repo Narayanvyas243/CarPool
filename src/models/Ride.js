@@ -51,6 +51,16 @@ const rideSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  totalSeats: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: 0
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

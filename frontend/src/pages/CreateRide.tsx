@@ -61,6 +61,8 @@ const CreateRide = () => {
           toLocation: destination,
           time: dateTimeString,
           seatsAvailable: parseInt(seats, 10),
+          totalSeats: parseInt(seats, 10),
+          price: parseInt(price, 10),
           createdBy: user.id
         })
       });

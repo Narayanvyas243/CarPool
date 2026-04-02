@@ -35,8 +35,8 @@ const Home = () => {
               date: dateObj.toLocaleDateString(),
               time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               availableSeats: r.seatsAvailable,
-              totalSeats: 4, // Default visual
-              pricePerSeat: 50 // Default visual missing from schema
+              totalSeats: r.totalSeats || 4,
+              pricePerSeat: r.price !== undefined ? r.price : 50
             };
           });
           setRides(mappedRides);
