@@ -17,6 +17,9 @@ import {
   QrCode,
   History,
   Shield,
+  Check,
+  X,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,10 +30,10 @@ const Profile = () => {
   const { toast } = useToast();
   const { user, logout } = useAuth();
   const [stats, setStats] = useState({ ridesOffered: 0, ridesTaken: 0 });
-  const [dashboardData, setDashboardData] = useState<{ createdRides: any[]; bookedRides: any[] }>({ createdRides: [], bookedRides: [] });
+  const [dashboardData, setDashboardData] = useState<{ createdRides: any[]; bookedRides: any[]; pendingRequests: any[] }>({ createdRides: [], bookedRides: [], pendingRequests: [] });
   const [profileData, setProfileData] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchDashboard = () => {
     if (user?.id) {
       fetch(`/api/rides/dashboard/${user.id}`)
         .then(res => res.json())
@@ -42,12 +45,18 @@ const Profile = () => {
             });
             setDashboardData({
               createdRides: data.dashboard.createdRides || [],
-              bookedRides: data.dashboard.bookedRides || []
+              bookedRides: data.dashboard.bookedRides || [],
+              pendingRequests: data.dashboard.pendingRequests || []
             });
           }
         })
         .catch(err => console.error(err));
+    }
+  };
 
+  useEffect(() => {
+    fetchDashboard();
+    if (user?.id) {
       fetch(`/api/users/${user.id}`)
         .then(res => res.json())
         .then(data => {
@@ -58,6 +67,41 @@ const Profile = () => {
         .catch(err => console.error(err));
     }
   }, [user]);
+
+  const handleRequestAction = async (rideId: string, requestId: string, action: 'accept' | 'reject') => {
+    try {
+      const res = await fetch(`/api/rides/${rideId}/requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ownerId: user?.id })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: `Request ${action}ed`, description: data.message });
+        fetchDashboard();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleCancelRide = async (rideId: string) => {
+    if (!confirm("Are you sure you want to cancel this ride? This will notify all passengers.")) return;
+    try {
+      const res = await fetch(`/api/rides/${rideId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Ride Cancelled", description: data.message });
+        fetchDashboard();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -110,26 +154,40 @@ const Profile = () => {
           <Card className="border-0 shadow-soft">
             <CardContent className="p-0">
               <div className="grid grid-cols-3 divide-x divide-border">
-                <div className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <Car className="h-4 w-4 text-primary" />
-                    <span className="text-xl font-bold text-foreground">{stats.ridesOffered}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Rides Offered</p>
-                </div>
-                <div className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <MapPin className="h-4 w-4 text-accent" />
-                    <span className="text-xl font-bold text-foreground">{stats.ridesTaken}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Rides Taken</p>
-                </div>
-                <div className="p-4 text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
-                    <span className="text-xl font-bold text-foreground">-</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Member Since</p>
-                </div>
+                 <div 
+                   className="p-4 text-center cursor-pointer hover:bg-secondary/50 transition-colors"
+                   onClick={() => {
+                     const element = document.getElementById('recent-rides');
+                     if (element) element.scrollIntoView({ behavior: 'smooth' });
+                   }}
+                 >
+                   <div className="flex items-center justify-center gap-1.5 mb-1">
+                     <Car className="h-4 w-4 text-primary" />
+                     <span className="text-xl font-bold text-foreground">{stats.ridesOffered}</span>
+                   </div>
+                   <p className="text-xs text-muted-foreground">Rides Offered</p>
+                 </div>
+                 <div 
+                   className="p-4 text-center cursor-pointer hover:bg-secondary/50 transition-colors"
+                   onClick={() => {
+                     const element = document.getElementById('recent-rides');
+                     if (element) element.scrollIntoView({ behavior: 'smooth' });
+                   }}
+                 >
+                   <div className="flex items-center justify-center gap-1.5 mb-1">
+                     <MapPin className="h-4 w-4 text-accent" />
+                     <span className="text-xl font-bold text-foreground">{stats.ridesTaken}</span>
+                   </div>
+                   <p className="text-xs text-muted-foreground">Rides Taken</p>
+                 </div>
+                 <div className="p-4 text-center">
+                   <div className="flex items-center justify-center gap-1.5 mb-1">
+                     <span className="text-sm font-bold text-foreground">
+                       {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : '-'}
+                     </span>
+                   </div>
+                   <p className="text-xs text-muted-foreground">Member Since</p>
+                 </div>
               </div>
             </CardContent>
           </Card>
@@ -161,8 +219,58 @@ const Profile = () => {
           </Card>
         </div>
 
+        {/* Pending Ride Requests (For Owners) */}
+        {dashboardData.pendingRequests.length > 0 && (
+          <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.16s" }}>
+            <h2 className="text-lg font-bold mb-3 px-1 flex items-center gap-2">
+              Ride Requests 
+              <span className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full">
+                {dashboardData.pendingRequests.length}
+              </span>
+            </h2>
+            <div className="space-y-3">
+              {dashboardData.pendingRequests.map((req: any) => (
+                <Card key={req.requestId} className="border-0 shadow-soft border-l-4 border-l-primary">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{req.requester.name}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">{req.requester.role}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-primary">{req.seatsRequested} Seat(s)</p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {req.fromLocation} → {req.toLocation}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-success hover:bg-success/90 h-8 text-xs"
+                        onClick={() => handleRequestAction(req.rideId, req.requestId, 'accept')}
+                      >
+                        <Check className="h-3 w-3 mr-1" /> Accept
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground h-8 text-xs"
+                        onClick={() => handleRequestAction(req.rideId, req.requestId, 'reject')}
+                      >
+                        <X className="h-3 w-3 mr-1" /> Reject
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Ride History Quick View */}
-        <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.18s" }}>
+        <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.18s" }} id="recent-rides">
           <h2 className="text-lg font-bold mb-3 px-1">Recent Rides</h2>
           <div className="space-y-3">
             {[...dashboardData.bookedRides.map(r => ({ ...r, type: 'Taken' })), ...dashboardData.createdRides.map(r => ({ ...r, type: 'Offered' }))]
@@ -183,7 +291,19 @@ const Profile = () => {
                        {new Date(ride.time).toLocaleDateString()} at {new Date(ride.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                      </span>
                    </div>
-                   <BadgeCheck className="h-5 w-5 text-success" />
+                   <div className="flex items-center gap-2">
+                     {ride.type === 'Offered' && (
+                       <Button 
+                         variant="ghost" 
+                         size="icon" 
+                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                         onClick={() => handleCancelRide(ride._id)}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     )}
+                     <BadgeCheck className="h-5 w-5 text-success" />
+                   </div>
                 </CardContent>
               </Card>
             ))}

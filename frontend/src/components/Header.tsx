@@ -1,8 +1,9 @@
-import { Bell, CheckCircle2, Clock } from "lucide-react";
+import { Bell, CheckCircle2, Clock, Trash2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useNotifications } from "../context/NotificationContext";
 
 interface HeaderProps {
   userName?: string;
@@ -12,6 +13,35 @@ interface HeaderProps {
 
 const Header = ({ userName = "Guest", userAvatar, showNotification = true }: HeaderProps) => {
   const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "ride_request_accepted": return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case "ride_request_rejected": return <Trash2 className="h-4 w-4 text-destructive" />;
+      case "ride_request_received": return <Info className="h-4 w-4 text-primary" />;
+      default: return <Clock className="h-4 w-4 text-warning" />;
+    }
+  };
+
+  const getIconBg = (type: string) => {
+    switch (type) {
+      case "ride_request_accepted": return "bg-success/15";
+      case "ride_request_rejected": return "bg-destructive/15";
+      case "ride_request_received": return "bg-primary/15";
+      default: return "bg-warning/15";
+    }
+  };
+
+  const timeAgo = (date: string) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return new Date(date).toLocaleDateString();
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
@@ -35,35 +65,39 @@ const Header = ({ userName = "Guest", userAvatar, showNotification = true }: Hea
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 p-0 mr-4">
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                   <h3 className="font-semibold text-sm">Notifications</h3>
-                  <span className="text-xs text-primary font-medium">2 New</span>
+                  {unreadCount > 0 && <span className="text-xs text-primary font-medium">{unreadCount} New</span>}
                 </div>
                 <div className="flex flex-col max-h-[300px] overflow-y-auto">
-                  <div className="flex items-start gap-3 p-4 border-b hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div className="mt-0.5 bg-success/15 p-1.5 rounded-full shrink-0">
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <div 
+                        key={notif._id} 
+                        className={`flex items-start gap-3 p-4 border-b hover:bg-muted/50 transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                        onClick={() => markAsRead(notif._id)}
+                      >
+                        <div className={`mt-0.5 ${getIconBg(notif.type)} p-1.5 rounded-full shrink-0`}>
+                          {getIcon(notif.type)}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">{notif.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">{notif.message}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">{timeAgo(notif.createdAt)}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-muted-foreground text-sm">
+                      No notifications yet
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">Ride Accepted</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">Rahul has accepted your ride request to Bidholi campus.</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">10 mins ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors cursor-pointer">
-                    <div className="mt-0.5 bg-warning/15 p-1.5 rounded-full shrink-0">
-                      <Clock className="h-4 w-4 text-warning" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">Driver Arriving Soon</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">Your driver will be at the pickup location in 5 minutes.</p>
-                      <p className="text-[10px] text-muted-foreground font-medium">Just now</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
                 <div className="p-2 border-t text-center bg-muted/20">
                   <Button variant="ghost" className="w-full text-xs h-8" size="sm">View all notifications</Button>

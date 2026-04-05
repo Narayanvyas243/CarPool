@@ -52,7 +52,7 @@ const Login = () => {
 
       toast({
         title: "Welcome back!",
-        description: "Successfully logged in to UPES BlaBla",
+        description: "Successfully logged in to SmartPool",
       });
 
       login(data.user);
@@ -76,7 +76,7 @@ const Login = () => {
           <span className="text-3xl font-bold text-primary-foreground">U</span>
         </div>
         <h1 className="text-3xl font-bold text-foreground mb-1 animate-fade-in">
-          UPES BlaBla
+          SmartPool
         </h1>
         <p className="text-muted-foreground text-center mb-8 animate-fade-in">
           Share rides with fellow students & faculty

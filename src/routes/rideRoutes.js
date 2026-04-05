@@ -263,6 +263,15 @@ router.post("/:rideId/request", async (req, res) => {
       meta: { rideId: ride._id, requestId: ride.requests[ride.requests.length - 1]._id }
     });
 
+    // Notify the requester that their request has been submitted.
+    await createAndSendNotification({
+      userId: requesterId,
+      type: "ride_request_received",
+      title: "Ride request sent",
+      message: `You have requested ${Number(seatsRequested) || 1} seat(s) for the ride to ${ride.toLocation}.`,
+      meta: { rideId: ride._id, requestId: ride.requests[ride.requests.length - 1]._id }
+    });
+
     res.status(201).json({
       message: "Ride request submitted successfully",
       ride: updatedRide
@@ -349,15 +358,29 @@ router.patch("/:rideId/requests/:requestId", async (req, res) => {
   }
 });
 
-// DELETE RIDE
+// DELETE RIDE (CANCEL RIDE)
 router.delete("/:id", async (req, res) => {
   try {
-    const ride = await Ride.findByIdAndDelete(req.params.id);
+    const ride = await Ride.findById(req.params.id);
 
     if (!ride) {
       return res.status(404).json({ message: "Ride not found" });
     }
 
+    // Notify all requesters (accepted or pending) that the ride is cancelled.
+    const notificationPromises = ride.requests.map(request => {
+      return createAndSendNotification({
+        userId: request.requester,
+        type: "ride_request_rejected", // Re-using rejected type for cancellation
+        title: "Ride Cancelled",
+        message: `The ride from ${ride.fromLocation} to ${ride.toLocation} has been cancelled by the owner.`,
+        meta: { rideId: ride._id }
+      });
+    });
+
+    await Promise.all(notificationPromises);
+
+    await Ride.findByIdAndDelete(req.params.id);
     clearRideTimers(req.params.id);
 
     res.status(200).json({ message: "Ride deleted successfully" });

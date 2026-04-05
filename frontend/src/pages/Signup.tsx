@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "../context/AuthContext";
 
 const Signup = () => {
   const [step, setStep] = useState<"details" | "otp">("details");
@@ -24,6 +25,7 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
 
   const isValidEmail = (email: string) => {
     return email.endsWith("@stu.upes.ac.in") || email.endsWith("@ddn.upes.ac.in");
@@ -116,11 +118,20 @@ const Signup = () => {
         throw new Error(data.message || 'OTP Verification failed');
       }
 
-      toast({
-        title: "Account Verified!",
-        description: `Welcome to UPES BlaBla as ${getUserRole(email)}! Please sign in.`,
-      });
-      navigate("/login");
+      if (data.user) {
+        login(data.user);
+        toast({
+          title: "Account Verified!",
+          description: `Welcome to SmartPool!`,
+        });
+        navigate("/");
+      } else {
+        toast({
+          title: "Account Verified!",
+          description: `Welcome to SmartPool! Please sign in.`,
+        });
+        navigate("/login");
+      }
 
     } catch (err: any) {
       toast({

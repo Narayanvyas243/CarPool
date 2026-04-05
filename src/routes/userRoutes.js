@@ -100,7 +100,15 @@ router.post("/verify-otp", async (req, res) => {
     await user.save();
 
     res.status(200).json({
-      message: "Account verified successfully"
+      message: "Account verified successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        gender: user.gender,
+        phone: user.phone
+      }
     });
 
   } catch (error) {
