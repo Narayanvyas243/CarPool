@@ -17,9 +17,17 @@ import {
   Calendar,
   Star,
   AlertCircle,
+  Mail,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const RideDetails = () => {
   const { id } = useParams();
@@ -29,6 +37,8 @@ const RideDetails = () => {
   const [isJoining, setIsJoining] = useState(false);
   const [ride, setRide] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedPassenger, setSelectedPassenger] = useState<any>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/rides/${id}`)
@@ -105,7 +115,10 @@ const RideDetails = () => {
     .filter((req: any) => req.status === "accepted")
     .map((req: any) => ({
       name: req.requester?.name || "Passenger",
-      avatar: ""
+      avatar: "",
+      phone: req.requester?.phone || "",
+      role: req.requester?.role || "student",
+      email: req.requester?.email || ""
     }));
 
   const isOwner = user && ride.createdBy && ride.createdBy._id === user.id;
@@ -182,7 +195,32 @@ const RideDetails = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="rounded-full">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className={`rounded-full ${hasBeenAccepted ? 'bg-success/10 text-success border-success' : ''}`}
+                  onClick={() => {
+                    if (hasBeenAccepted) {
+                      toast({
+                        title: "Driver Contact",
+                        description: `Phone: ${ride.createdBy?.phone || "Not provided"}`,
+                      });
+                      // Also copy to clipboard
+                      if (ride.createdBy?.phone) {
+                        navigator.clipboard.writeText(ride.createdBy.phone);
+                        toast({ title: "Copied", description: "Phone number copied to clipboard" });
+                      }
+                    } else if (isOwner) {
+                      toast({ title: "My Profile", description: "This is your ride!" });
+                    } else {
+                      toast({ 
+                        title: "Contact Restricted", 
+                        description: "Contact details are revealed once your request is accepted.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
                   <Phone className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="icon" className="rounded-full">
@@ -208,12 +246,30 @@ const RideDetails = () => {
             
             <div className="flex gap-3">
               {passengers.map((passenger: any, index: number) => (
-                <div key={index} className="flex flex-col items-center gap-1">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-secondary text-sm">
-                      {passenger.name.split(' ').map((n: string) => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
+                <div 
+                  key={index} 
+                  className={`flex flex-col items-center gap-1 group ${isOwner ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (isOwner) {
+                      setSelectedPassenger(passenger);
+                      setIsProfileOpen(true);
+                    }
+                  }}
+                >
+                  <div className="relative">
+                    <Avatar className={`h-10 w-10 ${isOwner ? 'ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all' : ''}`}>
+                      <AvatarFallback className="bg-secondary text-sm">
+                        {passenger.name.split(' ').map((n: string) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    {isOwner && passenger.phone && (
+                      <div 
+                        className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 shadow-soft"
+                      >
+                        <Phone className="h-2 w-2" />
+                      </div>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {passenger.name.split(' ')[0]}
                   </span>
@@ -276,6 +332,92 @@ const RideDetails = () => {
           </Button>
         </div>
       )}
+
+      {/* Passenger Profile Dialog */}
+      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+        <DialogContent className="sm:max-w-[350px] p-0 overflow-hidden border-0 shadow-elevated">
+          {selectedPassenger && (
+            <div className="animate-fade-in">
+              <div className="bg-gradient-primary pt-8 pb-12 px-6 text-center">
+                <Avatar className="h-20 w-20 mx-auto ring-4 ring-background/20 shadow-lg">
+                  <AvatarFallback className="bg-background text-primary text-xl font-bold">
+                    {selectedPassenger.name.split(' ').map((n: string) => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="mt-3 text-primary-foreground">
+                  <h3 className="text-xl font-bold">{selectedPassenger.name}</h3>
+                  <div className="flex items-center justify-center gap-1.5 mt-1 opacity-90">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/20 uppercase tracking-wider">
+                      {selectedPassenger.role}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="px-6 py-6 -mt-6 bg-background rounded-t-[30px] space-y-6">
+                {/* Rating */}
+                <div className="flex items-center justify-center gap-6 py-4 border-b border-border">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-warning">
+                      <Star className="h-4 w-4 fill-warning" />
+                      <span className="font-bold text-lg">5.0</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground uppercase">Rating</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <div className="font-bold text-lg">Verified</div>
+                    <p className="text-[10px] text-muted-foreground uppercase">Status</p>
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                      <Phone className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Phone Number</p>
+                      <p className="font-medium">{selectedPassenger.phone || "Not provided"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-accent/10">
+                      <Mail className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Email Address</p>
+                      <p className="font-medium text-sm break-all">{selectedPassenger.email || "Not provided"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  {selectedPassenger.phone && (
+                    <Button 
+                      className="w-full bg-success hover:bg-success/90 h-11"
+                      onClick={() => window.open(`tel:${selectedPassenger.phone}`)}
+                    >
+                      <Phone className="h-4 w-4 mr-2" /> Call
+                    </Button>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-11 border-primary text-primary"
+                    onClick={() => {
+                      toast({ title: "WhatsApp integration", description: "Coming soon!" });
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" /> Message
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

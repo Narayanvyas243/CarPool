@@ -20,6 +20,7 @@ import {
   Check,
   X,
   Trash2,
+  Users,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -277,33 +278,64 @@ const Profile = () => {
               .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
               .slice(0, 5)
               .map((ride: any, i) => (
-              <Card key={ride._id || i} className="border-0 shadow-soft">
-                <CardContent className="p-4 flex items-center justify-between">
-                   <div className="flex flex-col">
-                     <div className="flex items-center gap-2 mb-1">
-                       <span className="font-semibold text-sm text-foreground">{ride.fromLocation} → {ride.toLocation}</span>
-                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${ride.type === 'Offered' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
-                         {ride.type}
-                       </span>
-                     </div>
-                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                       <History className="h-3 w-3" />
-                       {new Date(ride.time).toLocaleDateString()} at {new Date(ride.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                     </span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                     {ride.type === 'Offered' && (
-                       <Button 
-                         variant="ghost" 
-                         size="icon" 
-                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                         onClick={() => handleCancelRide(ride._id)}
-                       >
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
-                     )}
-                     <BadgeCheck className="h-5 w-5 text-success" />
-                   </div>
+              <Card 
+                key={ride._id || i} 
+                className="border-0 shadow-soft cursor-pointer hover:border-primary transition-colors border-l-4 border-l-transparent hover:border-l-primary"
+                onClick={(e) => {
+                  // Don't navigate if clicking the cancel button
+                  if ((e.target as HTMLElement).closest('button')) return;
+                  navigate(`/ride/${ride._id}`);
+                }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm text-foreground">{ride.fromLocation} → {ride.toLocation}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${ride.type === 'Offered' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
+                          {ride.type}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <History className="h-3 w-3" />
+                        {new Date(ride.time).toLocaleDateString()} at {new Date(ride.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {ride.type === 'Offered' && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleCancelRide(ride._id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <BadgeCheck className="h-5 w-5 text-success" />
+                    </div>
+                  </div>
+
+                  {/* Show passengers if it's an offered ride with accepted requests */}
+                  {ride.type === 'Offered' && ride.requests && ride.requests.some((r: any) => r.status === 'accepted') && (
+                    <div className="mt-3 pt-3 border-t border-border space-y-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                        <Users className="h-3 w-3" /> Accepted Passengers
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {ride.requests.filter((r: any) => r.status === 'accepted').map((req: any, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2 bg-secondary/30 px-2 py-1 rounded-md">
+                            <span className="text-xs font-medium">{req.requester?.name}</span>
+                            {req.requester?.phone && (
+                              <a href={`tel:${req.requester.phone}`} className="text-primary hover:text-primary/80">
+                                <Phone className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

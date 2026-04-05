@@ -9,8 +9,8 @@ const {
 
 const router = express.Router();
 const RIDE_POPULATE = [
-  { path: "createdBy", select: "name email role gender" },
-  { path: "requests.requester", select: "name email role gender" }
+  { path: "createdBy", select: "name email role gender phone" },
+  { path: "requests.requester", select: "name email role gender phone" }
 ];
 
 // CREATE RIDE
@@ -51,7 +51,11 @@ router.post("/create", async (req, res) => {
 // GET ALL RIDES
 router.get("/all", async (req, res) => {
   try {
-    const rides = await Ride.find().populate(RIDE_POPULATE);
+    // Show rides that started up to 30 minutes ago.
+    const expirationThreshold = new Date(Date.now() - 30 * 60 * 1000);
+    const rides = await Ride.find({
+      time: { $gt: expirationThreshold }
+    }).populate(RIDE_POPULATE);
 
     res.status(200).json({
       message: "Rides fetched successfully",
@@ -70,8 +74,11 @@ router.get("/all", async (req, res) => {
 router.get("/search", async (req, res) => {
   try {
     const { from, to } = req.query;
+    const expirationThreshold = new Date(Date.now() - 30 * 60 * 1000);
 
-    let filter = {};
+    let filter = {
+      time: { $gt: expirationThreshold }
+    };
 
     if (from) {
       filter.fromLocation = new RegExp(from, "i");
@@ -351,9 +358,11 @@ router.patch("/:rideId/requests/:requestId", async (req, res) => {
       ride: updatedRide
     });
   } catch (error) {
+    console.error("Error in PATCH ride request:", error);
     res.status(500).json({
       message: "Error updating ride request",
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
