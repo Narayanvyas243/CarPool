@@ -131,7 +131,6 @@ router.get("/dashboard/:userId", async (req, res) => {
     const now = new Date();
     const mongoose = require("mongoose");
     const objId = new mongoose.Types.ObjectId(userId);
-    const now = new Date();
 
     const createdRides = await Ride.find({ createdBy: objId }).populate(RIDE_POPULATE);
 
