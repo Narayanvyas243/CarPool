@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 interface Notification {
   _id: string;
@@ -72,6 +73,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
       newSocket.on("notification:new", (notification: Notification) => {
         setNotifications((prev) => [notification, ...prev]);
+        
+        // Show real-time popup (toast)
+        toast({
+          title: notification.type === "ride_request_received" 
+            ? "New Ride Request! 🚗" 
+            : notification.title,
+          description: notification.message,
+          variant: "default",
+        });
       });
 
       return () => {

@@ -18,6 +18,9 @@ import {
   Star,
   AlertCircle,
   Mail,
+  Copy,
+  Check,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
@@ -39,6 +42,7 @@ const RideDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPassenger, setSelectedPassenger] = useState<any>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/rides/${id}`)
@@ -86,6 +90,36 @@ const RideDetails = () => {
     }
   };
 
+  const handleRequestAction = async (requestId: string, action: "accept" | "reject") => {
+    if (!user) return;
+    
+    setIsUpdating(requestId);
+    try {
+      const res = await fetch(`/api/rides/${id}/requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ownerId: user.id })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `Failed to ${action} request`);
+      
+      toast({
+        title: action === "accept" ? "Request Accepted! ✅" : "Request Rejected ❌",
+        description: action === "accept" ? "Passenger added to your ride." : "Request has been removed.",
+      });
+
+      // Refresh ride data
+      const upRes = await fetch(`/api/rides/${id}`);
+      setRide(await upRes.json());
+      
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <Layout showHeader={false} showNav={false}>
@@ -120,6 +154,9 @@ const RideDetails = () => {
       role: req.requester?.role || "student",
       email: req.requester?.email || ""
     }));
+
+  const pendingRequests = (ride.requests || [])
+    .filter((req: any) => req.status === "pending");
 
   const isOwner = user && ride.createdBy && ride.createdBy._id === user.id;
 
@@ -189,9 +226,30 @@ const RideDetails = () => {
                     <span className="font-semibold text-foreground">{ride.createdBy?.name}</span>
                     <BadgeCheck className="h-5 w-5 text-success" />
                   </div>
-                  <span className="verified-badge mt-1 inline-flex capitalize">
-                    {ride.createdBy?.role || "student"}
-                  </span>
+                  <div className="flex flex-col gap-1 mt-1">
+                    <span className="verified-badge inline-flex capitalize w-fit">
+                      {ride.createdBy?.role || "student"}
+                    </span>
+                    {hasBeenAccepted && ride.createdBy?.phone && (
+                      <div className="flex items-center gap-2 group animate-in fade-in slide-in-from-left-1 duration-300">
+                        <span className="text-xs font-medium text-primary flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {ride.createdBy.phone}
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-muted-foreground hover:text-primary transition-colors"
+                          onClick={() => {
+                            navigator.clipboard.writeText(ride.createdBy.phone);
+                            toast({ title: "Copied", description: "Driver's number copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -287,6 +345,56 @@ const RideDetails = () => {
           </CardContent>
         </Card>
 
+        {/* Pending Requests for Owner */}
+        {isOwner && pendingRequests.length > 0 && (
+          <div className="animate-fade-in space-y-3" style={{ animationDelay: "0.12s" }}>
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2 px-1">
+              <Clock className="h-4 w-4 text-primary" />
+              Pending Requests ({pendingRequests.length})
+            </h3>
+            <div className="space-y-3">
+              {pendingRequests.map((req: any) => (
+                <Card key={req._id} className="border-0 shadow-soft overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                          <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
+                            {(req.requester?.name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{req.requester?.name}</p>
+                          <p className="text-[10px] text-muted-foreground capitalize font-medium">{req.requester?.role} • 1 seat requested</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-9 w-9 rounded-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                          onClick={() => handleRequestAction(req._id, "reject")}
+                          disabled={isUpdating === req._id}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          className="h-9 w-9 rounded-full bg-success hover:bg-success/90"
+                          onClick={() => handleRequestAction(req._id, "accept")}
+                          disabled={isUpdating === req._id}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Price Card */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.15s" }}>
           <CardContent className="p-5">
@@ -379,7 +487,22 @@ const RideDetails = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold">Phone Number</p>
-                      <p className="font-medium">{selectedPassenger.phone || "Not provided"}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">{selectedPassenger.phone || "Not provided"}</p>
+                        {selectedPassenger.phone && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedPassenger.phone);
+                              toast({ title: "Copied", description: "Passenger's number copied to clipboard" });
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">

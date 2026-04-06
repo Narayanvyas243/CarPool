@@ -37,7 +37,12 @@ const Search = () => {
               time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               availableSeats: r.seatsAvailable,
               totalSeats: r.totalSeats || 4,
-              pricePerSeat: r.price !== undefined ? r.price : 50
+              pricePerSeat: r.price !== undefined ? r.price : 50,
+              driverId: r.createdBy?._id || r.createdBy || "",
+              isPassenger: r.requests?.some((req: any) => 
+                (req.requester?._id === user?.id || req.requester === user?.id) && 
+                req.status === "accepted"
+              )
             };
           });
           setRides(mappedRides);

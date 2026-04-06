@@ -21,6 +21,7 @@ import {
   X,
   Trash2,
   Users,
+  Copy,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,7 +32,17 @@ const Profile = () => {
   const { toast } = useToast();
   const { user, logout } = useAuth();
   const [stats, setStats] = useState({ ridesOffered: 0, ridesTaken: 0 });
-  const [dashboardData, setDashboardData] = useState<{ createdRides: any[]; bookedRides: any[]; pendingRequests: any[] }>({ createdRides: [], bookedRides: [], pendingRequests: [] });
+  const [dashboardData, setDashboardData] = useState<{ 
+    createdRides: any[]; 
+    bookedRides: any[]; 
+    pastBookedRides: any[];
+    pendingRequests: any[] 
+  }>({ 
+    createdRides: [], 
+    bookedRides: [], 
+    pastBookedRides: [],
+    pendingRequests: [] 
+  });
   const [profileData, setProfileData] = useState<any>(null);
 
   const fetchDashboard = () => {
@@ -42,11 +53,12 @@ const Profile = () => {
           if (data.dashboard) {
             setStats({
               ridesOffered: data.dashboard.createdRides?.length || 0,
-              ridesTaken: data.dashboard.bookedRides?.length || 0
+              ridesTaken: data.dashboard.pastBookedRides?.length || 0
             });
             setDashboardData({
               createdRides: data.dashboard.createdRides || [],
               bookedRides: data.dashboard.bookedRides || [],
+              pastBookedRides: data.dashboard.pastBookedRides || [],
               pendingRequests: data.dashboard.pendingRequests || []
             });
           }
@@ -274,7 +286,16 @@ const Profile = () => {
         <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.18s" }} id="recent-rides">
           <h2 className="text-lg font-bold mb-3 px-1">Recent Rides</h2>
           <div className="space-y-3">
-            {[...dashboardData.bookedRides.map(r => ({ ...r, type: 'Taken' })), ...dashboardData.createdRides.map(r => ({ ...r, type: 'Offered' }))]
+            {[
+              ...dashboardData.bookedRides.map(r => ({ 
+                ...r, 
+                type: new Date(r.time) < new Date() ? 'Taken' : 'Booked' 
+              })), 
+              ...dashboardData.createdRides.map(r => ({ 
+                ...r, 
+                type: new Date(r.time) < new Date() ? 'Completed' : 'Offered' 
+              }))
+            ]
               .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
               .slice(0, 5)
               .map((ride: any, i) => (
@@ -292,7 +313,12 @@ const Profile = () => {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm text-foreground">{ride.fromLocation} → {ride.toLocation}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${ride.type === 'Offered' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent'}`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                          ride.type === 'Booked' ? 'bg-success/10 text-success' :
+                          ride.type === 'Offered' ? 'bg-primary/10 text-primary' :
+                          ride.type === 'Taken' ? 'bg-accent/10 text-accent' :
+                          'bg-muted text-muted-foreground' // Completed
+                        }`}>
                           {ride.type}
                         </span>
                       </div>
@@ -324,12 +350,26 @@ const Profile = () => {
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {ride.requests.filter((r: any) => r.status === 'accepted').map((req: any, idx: number) => (
-                          <div key={idx} className="flex items-center gap-2 bg-secondary/30 px-2 py-1 rounded-md">
+                          <div key={idx} className="flex items-center gap-2 bg-secondary/30 px-2 py-1 rounded-md group">
                             <span className="text-xs font-medium">{req.requester?.name}</span>
                             {req.requester?.phone && (
-                              <a href={`tel:${req.requester.phone}`} className="text-primary hover:text-primary/80">
-                                <Phone className="h-3 w-3" />
-                              </a>
+                              <div className="flex items-center gap-1">
+                                <a href={`tel:${req.requester.phone}`} className="text-primary hover:text-primary/80">
+                                  <Phone className="h-3 w-3" />
+                                </a>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(req.requester.phone);
+                                    toast({ title: "Copied", description: "Phone number copied!" });
+                                  }}
+                                >
+                                  <Copy className="h-2.5 w-2.5" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                         ))}

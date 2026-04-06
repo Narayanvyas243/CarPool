@@ -1,7 +1,7 @@
 import { Bell, CheckCircle2, Clock, Trash2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications } from "../context/NotificationContext";
 
@@ -14,6 +14,7 @@ interface HeaderProps {
 const Header = ({ userName = "Guest", userAvatar, showNotification = true }: HeaderProps) => {
   const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
   const { notifications, unreadCount, markAsRead } = useNotifications();
+  const navigate = useNavigate();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -81,7 +82,12 @@ const Header = ({ userName = "Guest", userAvatar, showNotification = true }: Hea
                       <div 
                         key={notif._id} 
                         className={`flex items-start gap-3 p-4 border-b hover:bg-muted/50 transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
-                        onClick={() => markAsRead(notif._id)}
+                        onClick={() => {
+                          markAsRead(notif._id);
+                          if (notif.meta?.rideId) {
+                            navigate(`/ride/${notif.meta.rideId}`);
+                          }
+                        }}
                       >
                         <div className={`mt-0.5 ${getIconBg(notif.type)} p-1.5 rounded-full shrink-0`}>
                           {getIcon(notif.type)}
@@ -100,7 +106,14 @@ const Header = ({ userName = "Guest", userAvatar, showNotification = true }: Hea
                   )}
                 </div>
                 <div className="p-2 border-t text-center bg-muted/20">
-                  <Button variant="ghost" className="w-full text-xs h-8" size="sm">View all notifications</Button>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-xs h-8 font-semibold text-primary hover:text-primary hover:bg-primary/10" 
+                    size="sm"
+                    onClick={() => navigate("/notifications")}
+                  >
+                    View all notifications
+                  </Button>
                 </div>
               </PopoverContent>
             </Popover>

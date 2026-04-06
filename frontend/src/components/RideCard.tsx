@@ -16,6 +16,8 @@ export interface RideData {
   availableSeats: number;
   totalSeats: number;
   pricePerSeat: number;
+  driverId: string;
+  isPassenger?: boolean;
 }
 
 interface RideCardProps {
@@ -23,9 +25,13 @@ interface RideCardProps {
   onJoinRide?: (rideId: string) => void;
 }
 
+import { useAuth } from "../context/AuthContext";
+
 const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
+  const { user } = useAuth();
   const seatsLeft = ride.availableSeats;
   const seatsFilled = ride.totalSeats - ride.availableSeats;
+  const isDriver = user?.id === ride.driverId;
 
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-elevated group animate-fade-in">
@@ -109,11 +115,11 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
         <div className="border-t border-border p-4 bg-secondary/30">
           <Button 
             className="w-full" 
-            variant={seatsLeft === 0 ? "secondary" : "default"}
-            disabled={seatsLeft === 0}
+            variant={isDriver || ride.isPassenger ? "outline" : (seatsLeft === 0 ? "secondary" : "default")}
+            disabled={!isDriver && !ride.isPassenger && seatsLeft === 0}
             onClick={() => onJoinRide?.(ride.id)}
           >
-            {seatsLeft === 0 ? "Fully Booked" : "Join Ride"}
+            {isDriver ? "Ride Details" : (ride.isPassenger ? "You are in this ride" : (seatsLeft === 0 ? "Fully Booked" : "Join Ride"))}
           </Button>
         </div>
       </CardContent>

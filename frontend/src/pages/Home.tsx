@@ -37,7 +37,12 @@ const Home = () => {
               time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               availableSeats: r.seatsAvailable,
               totalSeats: r.totalSeats || 4,
-              pricePerSeat: r.price !== undefined ? r.price : 50
+              pricePerSeat: r.price !== undefined ? r.price : 50,
+              driverId: r.createdBy?._id || r.createdBy || "",
+              isPassenger: r.requests?.some((req: any) => 
+                (req.requester?._id === user?.id || req.requester === user?.id) && 
+                req.status === "accepted"
+              )
             };
           });
           setRides(mappedRides);
@@ -51,7 +56,10 @@ const Home = () => {
         .then(res => res.json())
         .then(data => {
           if (data.dashboard) {
-            setStats(prev => ({ ...prev, ridesTaken: data.dashboard.bookedRides?.length || 0 }));
+            setStats(prev => ({ 
+              ...prev, 
+              ridesTaken: data.dashboard.pastBookedRides?.length || 0 
+            }));
           }
         })
         .catch(err => console.error(err));

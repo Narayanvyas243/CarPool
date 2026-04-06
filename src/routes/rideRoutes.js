@@ -31,6 +31,16 @@ router.post("/create", async (req, res) => {
       });
     }
 
+    const rideTime = new Date(req.body.time);
+    const now = new Date();
+
+    // Allow a 1-minute buffer for form submission time and network latency.
+    if (rideTime < new Date(now.getTime() - 60000)) {
+      return res.status(400).json({
+        message: "Cannot create a ride for a past date or time"
+      });
+    }
+
     const ride = await Ride.create(req.body);
     const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
     await scheduleRideLifecycleNotifications(populatedRide);
@@ -118,12 +128,24 @@ router.get("/dashboard/:userId", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const createdRides = await Ride.find({ createdBy: userId }).populate(RIDE_POPULATE);
+    const now = new Date();
+    const mongoose = require("mongoose");
+    const objId = new mongoose.Types.ObjectId(userId);
+    const now = new Date();
+
+    const createdRides = await Ride.find({ createdBy: objId }).populate(RIDE_POPULATE);
 
     const bookedRides = await Ride.find({
-      "requests.requester": userId,
-      "requests.status": "accepted"
+      requests: { $elemMatch: { requester: objId, status: "accepted" } }
     }).populate(RIDE_POPULATE);
+
+    const pastBookedRides = bookedRides.filter(ride => new Date(ride.time) < now);
+    const upcomingBookedRides = bookedRides.filter(ride => new Date(ride.time) >= now);
+
+    console.log(`[Dashboard] User: ${userId}`);
+    console.log(`[Dashboard] Total Booked: ${bookedRides.length}`);
+    console.log(`[Dashboard] Past: ${pastBookedRides.length}`);
+    console.log(`[Dashboard] Upcoming: ${upcomingBookedRides.length}`);
 
     // Pending requests the ride owner needs to approve/reject.
     const ownerRidesWithPending = await Ride.find({
@@ -149,7 +171,9 @@ router.get("/dashboard/:userId", async (req, res) => {
       message: "Dashboard fetched successfully",
       dashboard: {
         createdRides,
-        bookedRides,
+        bookedRides, // Original full list
+        pastBookedRides,
+        upcomingBookedRides,
         pendingRequests
       }
     });
