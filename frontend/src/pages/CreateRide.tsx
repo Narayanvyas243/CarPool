@@ -41,10 +41,15 @@ const CreateRide = () => {
       });
       return;
     }
+    const rideDateTime = new Date(`${date}T${time}`);
+    const now = new Date();
 
-    if (!user) {
-      toast({ title: "Unauthorized", description: "You must log in to create a ride."});
-      navigate("/login");
+    if (rideDateTime < new Date(now.getTime() - 60000)) {
+      toast({
+        title: "Invalid Time",
+        description: "You cannot create a ride for a past date or time.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -146,7 +151,8 @@ const CreateRide = () => {
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      className="pl-11 h-12 bg-secondary border-0"
+                      min={new Date().toISOString().split('T')[0]}
+                      className="pl-11 h-12 bg-secondary border-0 [color-scheme:dark]"
                     />
                   </div>
                 </div>

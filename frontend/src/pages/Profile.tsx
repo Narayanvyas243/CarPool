@@ -380,7 +380,7 @@ const Profile = () => {
               </Card>
             ))}
             {dashboardData.bookedRides.length === 0 && dashboardData.createdRides.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-lg">No ride history available</p>
+              <p className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-lg animate-fade-in">You have not traveled</p>
             )}
           </div>
         </div>
@@ -392,7 +392,13 @@ const Profile = () => {
               {menuItems.map((item, index) => (
                 <button
                   key={item.label}
-                  onClick={() => toast({ title: "Coming soon!", description: `${item.label} feature is under development` })}
+                  onClick={() => {
+                    if (item.path.startsWith('/')) {
+                      navigate(item.path);
+                    } else {
+                      toast({ title: "Coming soon!", description: `${item.label} feature is under development` });
+                    }
+                  }}
                   className={`w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors ${
                     index < menuItems.length - 1 ? 'border-b border-border' : ''
                   }`}

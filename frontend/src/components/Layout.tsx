@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import Header from "./Header";
 import BottomNav from "./BottomNav";
+import NotificationPopup from "./NotificationPopup";
 
 interface LayoutProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ const Layout = ({
         {children}
       </main>
       {showNav && <BottomNav />}
+      <NotificationPopup />
     </div>
   );
 };
