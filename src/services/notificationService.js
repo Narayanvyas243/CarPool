@@ -20,6 +20,19 @@ const createAndSendNotification = async ({
   return notification;
 };
 
+const markNotificationsByMetaAsRead = async (userId, type, meta) => {
+  try {
+    const query = { user: userId, type };
+    if (meta.rideId) query["meta.rideId"] = meta.rideId;
+    if (meta.requestId) query["meta.requestId"] = meta.requestId;
+
+    await Notification.updateMany(query, { isRead: true });
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+  }
+};
+
 module.exports = {
-  createAndSendNotification
+  createAndSendNotification,
+  markNotificationsByMetaAsRead
 };

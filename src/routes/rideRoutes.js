@@ -1,7 +1,10 @@
 const express = require("express");
 const Ride = require("../models/Ride");
 const User = require("../models/User");
-const { createAndSendNotification } = require("../services/notificationService");
+const { 
+  createAndSendNotification,
+  markNotificationsByMetaAsRead
+} = require("../services/notificationService");
 const {
   scheduleRideLifecycleNotifications,
   clearRideTimers
@@ -375,6 +378,13 @@ router.patch("/:rideId/requests/:requestId", async (req, res) => {
           : `Your request was rejected for ride ${ride.fromLocation} to ${ride.toLocation}.`,
       meta: { rideId: ride._id, requestId: request._id }
     });
+    
+    // Mark the original "ride_request_received" notification as read for the ride owner.
+    await markNotificationsByMetaAsRead(
+      ride.createdBy, 
+      "ride_request_received", 
+      { rideId: ride._id, requestId: request._id }
+    );
 
     res.status(200).json({
       message: `Request ${action}ed successfully`,
