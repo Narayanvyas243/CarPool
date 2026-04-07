@@ -12,6 +12,7 @@ import Search from "./pages/Search";
 import RideDetails from "./pages/RideDetails";
 import Notifications from "./pages/Notifications";
 import RideHistory from "./pages/RideHistory";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/ride/:id" element={<ProtectedRoute><RideDetails /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/history" element={<ProtectedRoute><RideHistory /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

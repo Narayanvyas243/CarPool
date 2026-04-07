@@ -186,4 +186,98 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+/* ==============================
+   UPDATE USER PROFILE
+================================= */
+router.put("/:id", async (req, res) => {
+  try {
+    const { name, phone, gender } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (gender) {
+      const normalizedGender = gender.toLowerCase();
+      if (["male", "female"].includes(normalizedGender)) {
+        user.gender = normalizedGender;
+      }
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        gender: user.gender,
+        phone: user.phone
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating profile",
+      error: error.message
+    });
+  }
+});
+
+/* ==============================
+   UPDATE PASSWORD
+================================= */
+router.put("/:id/password", async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect old password" });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating password",
+      error: error.message
+    });
+  }
+});
+
+/* ==============================
+   DELETE USER
+================================= */
+router.delete("/:id", async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error deleting account",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
