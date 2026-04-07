@@ -13,6 +13,7 @@ import RideDetails from "./pages/RideDetails";
 import Notifications from "./pages/Notifications";
 import RideHistory from "./pages/RideHistory";
 import Settings from "./pages/Settings";
+import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/create-ride" element={<ProtectedRoute><CreateRide /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />

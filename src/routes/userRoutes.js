@@ -280,4 +280,94 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+/* ==============================
+   FORGOT PASSWORD - REQUEST OTP
+================================= */
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found with this email" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+    await user.save();
+
+    // Send OTP Email
+    await sendEmail(
+      email, 
+      otp, 
+      "SmartPool Password Reset", 
+      `Your password reset OTP is ${otp}. It will expire in 5 minutes.`
+    );
+
+    res.status(200).json({ message: "OTP sent to your email" });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to send reset OTP",
+      error: error.message
+    });
+  }
+});
+
+/* ==============================
+   FORGOT PASSWORD - VERIFY OTP
+================================= */
+router.post("/verify-forgot-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    res.status(200).json({ message: "OTP verified. You can now reset your password." });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "OTP verification failed",
+      error: error.message
+    });
+  }
+});
+
+/* ==============================
+   FORGOT PASSWORD - RESET PASSWORD
+================================= */
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP session" });
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    
+    // Clear OTP fields
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully. You can now login." });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Password reset failed",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
