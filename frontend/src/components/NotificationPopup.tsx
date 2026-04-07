@@ -39,11 +39,17 @@ const NotificationPopup = () => {
 
   const handleViewDetails = () => {
     if (activeNotification?.meta?.rideId) {
+      // Mark as read immediately when user clicks to view details
+      markAsRead(activeNotification._id);
       setIsOpen(false);
       navigate(`/ride/${activeNotification.meta.rideId}`);
-      // Optional: Mark as read when clicking? 
-      // User might want it to stay in notification list though.
     }
+  };
+
+  const handleDismiss = () => {
+    // Mark as read even if user just dismisses it, so it doesn't pop up again
+    markAsRead(activeNotification._id);
+    setIsOpen(false);
   };
 
   if (!activeNotification) return null;
@@ -74,7 +80,7 @@ const NotificationPopup = () => {
         <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4 sm:justify-center">
           <Button 
             variant="outline" 
-            onClick={() => setIsOpen(false)}
+            onClick={handleDismiss}
             className="flex-1 sm:flex-none border-border"
           >
             Later

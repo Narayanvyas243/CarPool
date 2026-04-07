@@ -22,11 +22,24 @@ const createAndSendNotification = async ({
 
 const markNotificationsByMetaAsRead = async (userId, type, meta) => {
   try {
-    const query = { user: userId, type };
-    if (meta.rideId) query["meta.rideId"] = meta.rideId;
-    if (meta.requestId) query["meta.requestId"] = meta.requestId;
+    const mongoose = require("mongoose");
+    const query = { user: userId, type, isRead: false };
+    
+    // Explicitly handle nested meta fields with potential ObjectId casting
+    if (meta.rideId) {
+      query["meta.rideId"] = mongoose.Types.ObjectId.isValid(meta.rideId) 
+        ? new mongoose.Types.ObjectId(meta.rideId) 
+        : meta.rideId;
+    }
+    
+    if (meta.requestId) {
+      query["meta.requestId"] = mongoose.Types.ObjectId.isValid(meta.requestId) 
+        ? new mongoose.Types.ObjectId(meta.requestId) 
+        : meta.requestId;
+    }
 
-    await Notification.updateMany(query, { isRead: true });
+    const result = await Notification.updateMany(query, { isRead: true });
+    console.log(`[NotificationService] Marked as read: ${result.modifiedCount} notification(s) for user ${userId}`);
   } catch (error) {
     console.error("Error marking notifications as read:", error);
   }
