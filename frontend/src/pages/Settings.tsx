@@ -37,7 +37,7 @@ const Settings = () => {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   // Profile State
   const [profileData, setProfileData] = useState({
@@ -285,7 +285,7 @@ const Settings = () => {
                     <p className="text-xs text-muted-foreground">Sync your appearance with your device</p>
                   </div>
                   <Switch 
-                    checked={theme === "dark"} 
+                    checked={resolvedTheme === "dark"} 
                     onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} 
                   />
                 </div>
