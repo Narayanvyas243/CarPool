@@ -31,7 +31,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="carpool-theme">
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="carpool-theme">
       <AuthProvider>
         <TooltipProvider>
           <NotificationProvider>
