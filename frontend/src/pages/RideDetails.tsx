@@ -31,6 +31,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import RideMap from "@/components/RideMap";
 
 const RideDetails = () => {
   const { id } = useParams();
@@ -210,6 +211,24 @@ const RideDetails = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Map View */}
+        {ride.fromCoords && ride.toCoords && (
+          <div className="animate-fade-in" style={{ animationDelay: "0.02s" }}>
+            <RideMap 
+              from={{ 
+                lat: ride.fromCoords.lat, 
+                lng: ride.fromCoords.lng, 
+                name: ride.fromLocation 
+              }} 
+              to={{ 
+                lat: ride.toCoords.lat, 
+                lng: ride.toCoords.lng, 
+                name: ride.toLocation 
+              }} 
+            />
+          </div>
+        )}
 
         {/* Driver Card */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.05s" }}>

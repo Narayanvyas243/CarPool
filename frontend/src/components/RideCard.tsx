@@ -18,6 +18,8 @@ export interface RideData {
   pricePerSeat: number;
   driverId: string;
   isPassenger?: boolean;
+  fromCoords?: { lat: number; lng: number };
+  toCoords?: { lat: number; lng: number };
 }
 
 interface RideCardProps {

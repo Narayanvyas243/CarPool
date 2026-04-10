@@ -3,8 +3,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SearchBar from "@/components/SearchBar";
 import RideCard, { RideData } from "@/components/RideCard";
-import { Car } from "lucide-react";
+import { Car, Map as MapIcon, List } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import GlobalRideMap from "@/components/GlobalRideMap";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -39,6 +41,8 @@ const Search = () => {
               totalSeats: r.totalSeats || 4,
               pricePerSeat: r.price !== undefined ? r.price : 50,
               driverId: r.createdBy?._id || r.createdBy || "",
+              fromCoords: r.fromCoords,
+              toCoords: r.toCoords,
               isPassenger: r.requests?.some((req: any) => 
                 (req.requester?._id === user?.id || req.requester === user?.id) && 
                 req.status === "accepted"
@@ -73,12 +77,37 @@ const Search = () => {
             <span className="animate-pulse">Searching rides...</span>
           </div>
         ) : rides.length > 0 ? (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Results</h2>
-            {rides.map(ride => (
-              <RideCard key={ride.id} ride={ride} onJoinRide={handleJoinRide} />
-            ))}
-          </div>
+          <Tabs defaultValue="list" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Results ({rides.length})</h2>
+              <TabsList className="bg-muted/50 p-1 rounded-xl">
+                <TabsTrigger value="list" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-8 px-3">
+                  <List className="h-4 w-4 mr-1.5" />
+                  List
+                </TabsTrigger>
+                <TabsTrigger value="map" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-8 px-3">
+                  <MapIcon className="h-4 w-4 mr-1.5" />
+                  Map
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="list" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 m-0">
+              {rides.map(ride => (
+                <RideCard key={ride.id} ride={ride} onJoinRide={handleJoinRide} />
+              ))}
+            </TabsContent>
+
+            <TabsContent value="map" className="animate-in fade-in slide-in-from-bottom-2 duration-300 m-0">
+              <GlobalRideMap rides={rides} onSelectRide={handleJoinRide} />
+              <div className="space-y-4 mt-6">
+                <h3 className="text-sm font-medium text-muted-foreground">Nearby Rides</h3>
+                {rides.map(ride => (
+                  <RideCard key={ride.id} ride={ride} onJoinRide={handleJoinRide} />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="text-center py-16 animate-fade-in" style={{ animationDelay: "0.2s" }}>
             <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">

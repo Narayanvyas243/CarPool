@@ -17,10 +17,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import MapPicker from "@/components/MapPicker";
 
 const CreateRide = () => {
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
+  const [fromCoords, setFromCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [toCoords, setToCoords] = useState<{lat: number, lng: number} | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState("4");
@@ -64,6 +67,8 @@ const CreateRide = () => {
         body: JSON.stringify({
           fromLocation: source,
           toLocation: destination,
+          fromCoords: fromCoords,
+          toCoords: toCoords,
           time: dateTimeString,
           seatsAvailable: parseInt(seats, 10),
           totalSeats: parseInt(seats, 10),
@@ -119,25 +124,51 @@ const CreateRide = () => {
           <CardContent>
             <form onSubmit={handleCreateRide} className="space-y-5">
               {/* Route */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <label className="text-sm font-medium text-foreground">Route</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                  <Input
-                    placeholder="Pickup location (e.g., UPES Campus)"
-                    value={source}
-                    onChange={(e) => setSource(e.target.value)}
-                    className="pl-11 h-12 bg-secondary border-0"
-                  />
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground ml-1">Pickup</span>
+                    <MapPicker 
+                      title="Select Pickup Location" 
+                      onLocationSelect={(loc) => {
+                        setSource(loc.address);
+                        setFromCoords({ lat: loc.lat, lng: loc.lng });
+                      }} 
+                    />
+                  </div>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                    <Input
+                      placeholder="Pickup location (e.g., UPES Campus)"
+                      value={source}
+                      onChange={(e) => setSource(e.target.value)}
+                      className="pl-11 h-12 bg-secondary border-0"
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-accent" />
-                  <Input
-                    placeholder="Drop-off location (e.g., Clock Tower)"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    className="pl-11 h-12 bg-secondary border-0"
-                  />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground ml-1">Drop-off</span>
+                    <MapPicker 
+                      title="Select Drop-off Location" 
+                      onLocationSelect={(loc) => {
+                        setDestination(loc.address);
+                        setToCoords({ lat: loc.lat, lng: loc.lng });
+                      }} 
+                    />
+                  </div>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-accent" />
+                    <Input
+                      placeholder="Drop-off location (e.g., Clock Tower)"
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                      className="pl-11 h-12 bg-secondary border-0"
+                    />
+                  </div>
                 </div>
               </div>
 
