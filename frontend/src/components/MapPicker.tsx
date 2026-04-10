@@ -234,12 +234,29 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           markerInstance.current = L.marker([latitude, longitude], { icon: customIcon }).addTo(mapInstance.current!);
         }
 
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-          .then(res => res.json())
-          .then(data => {
-            const shortAddress = data.display_name.split(',').slice(0, 2).join(',');
-            setSearchQuery(shortAddress);
-          });
+        // Smart Proximity Check - If within 600m of a known campus, prioritize our campus name
+        const findNearbyCampus = () => {
+          for (const loc of QUICK_LOCATIONS) {
+            // Rough distance check (approx 0.005 degrees ~ 550m)
+            const dist = Math.sqrt(Math.pow(loc.lat - latitude, 2) + Math.pow(loc.lng - longitude, 2));
+            if (dist < 0.006) return loc.name;
+          }
+          return null;
+        };
+
+        const nearbyCampus = findNearbyCampus();
+        if (nearbyCampus) {
+          setSearchQuery(nearbyCampus);
+          setSelectedName(nearbyCampus);
+        } else {
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+            .then(res => res.json())
+            .then(data => {
+              const shortAddress = data.display_name.split(',').slice(0, 2).join(',');
+              setSearchQuery(shortAddress);
+              setSelectedName("");
+            });
+        }
       });
     }
   };
