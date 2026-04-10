@@ -32,9 +32,11 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [libStatus, setLibStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [selectedName, setSelectedName] = useState("");
+  const [mapType, setMapType] = useState<'voyager' | 'satellite'>('voyager');
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
   const markerInstance = useRef<any>(null);
 
   // Dynamic Loader for Leaflet
@@ -99,9 +101,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           attributionControl: false
         }).setView(initialCoords, 14);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // Initial layer
+        const layerUrl = mapType === 'satellite' 
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        
+        tileLayerRef.current = L.tileLayer(layerUrl, {
           maxZoom: 19,
-          subdomains: 'abcd'
+          subdomains: mapType === 'voyager' ? 'abcd' : ''
         }).addTo(mapInstance.current);
 
         const customIcon = L.icon({
@@ -141,9 +148,29 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         mapInstance.current.remove();
         mapInstance.current = null;
         markerInstance.current = null;
+        tileLayerRef.current = null;
       }
     };
   }, [isOpen, libStatus]);
+
+  // Handle layer switching
+  useEffect(() => {
+    if (mapInstance.current && (window as any).L) {
+      const L = (window as any).L;
+      if (tileLayerRef.current) {
+        mapInstance.current.removeLayer(tileLayerRef.current);
+      }
+      
+      const layerUrl = mapType === 'satellite' 
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      
+      tileLayerRef.current = L.tileLayer(layerUrl, {
+        maxZoom: 19,
+        subdomains: mapType === 'voyager' ? 'abcd' : ''
+      }).addTo(mapInstance.current);
+    }
+  }, [mapType]);
 
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
@@ -360,6 +387,20 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
         <div className="flex-1 min-h-[300px] relative z-0 border-y bg-slate-50 flex items-center justify-center">
           <div ref={mapContainerRef} className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${libStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`} style={{ background: '#f8fafc' }} />
+          
+          {/* Layer Toggle Floating Button */}
+          {libStatus === 'ready' && (
+            <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="shadow-xl border-2 border-white/50 bg-white/90 backdrop-blur-md hover:bg-white font-bold text-[11px] h-9 px-3 text-slate-700"
+                onClick={() => setMapType(mapType === 'voyager' ? 'satellite' : 'voyager')}
+              >
+                {mapType === 'voyager' ? "Satellite View" : "Street View"}
+              </Button>
+            </div>
+          )}
           
           {libStatus === 'loading' && (
             <div className="flex flex-col items-center gap-3">
