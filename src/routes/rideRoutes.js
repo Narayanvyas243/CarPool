@@ -169,11 +169,26 @@ router.get("/dashboard/:userId", async (req, res) => {
         }))
     );
 
+    // [Auto-Cleanup] Mark notifications as read for any requests that have already been 
+    // processed (accepted/rejected) or are being shown here.
+    // This solves the 'persistent notification' bug.
+    const processedRides = createdRides.filter(r => r.requests.some(req => req.status !== 'pending'));
+    for (const ride of processedRides) {
+      for (const req of ride.requests) {
+        if (req.status !== 'pending') {
+          await markNotificationsByMetaAsRead(userId, "ride_request_received", {
+            rideId: ride._id,
+            requestId: req._id
+          });
+        }
+      }
+    }
+
     res.status(200).json({
       message: "Dashboard fetched successfully",
       dashboard: {
         createdRides,
-        bookedRides, // Original full list
+        bookedRides, 
         pastBookedRides,
         upcomingBookedRides,
         pendingRequests

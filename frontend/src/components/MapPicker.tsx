@@ -31,6 +31,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   const [isSearching, setIsSearching] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [libStatus, setLibStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [selectedName, setSelectedName] = useState("");
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -76,8 +77,10 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
     if (isOpen) {
       if (initialLocation) {
         setCoords({ lat: initialLocation.lat, lng: initialLocation.lng });
+        setSelectedName("");
       } else {
         setCoords(null);
+        setSelectedName("");
       }
     }
   }, [isOpen, initialLocation]);
@@ -115,6 +118,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         mapInstance.current.on('click', (e: any) => {
           const { lat, lng } = e.latlng;
           setCoords({ lat, lng });
+          setSelectedName(""); // Clear locked name on manual click
           
           if (markerInstance.current) {
             markerInstance.current.setLatLng(e.latlng);
@@ -143,15 +147,50 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
+    
+    // Smart Interceptor for UPES Campuses
+    const lowerQuery = searchQuery.toLowerCase();
+    let campusOverride = null;
+    
+    if (lowerQuery.includes("kandoli")) {
+      campusOverride = QUICK_LOCATIONS.find(l => l.name.includes("Kandoli"));
+    } else if (lowerQuery.includes("bidholi")) {
+      campusOverride = QUICK_LOCATIONS.find(l => l.name.includes("Bidholi"));
+    }
+
+    if (campusOverride) {
+      setCoords({ lat: campusOverride.lat, lng: campusOverride.lng });
+      setSelectedName(campusOverride.name);
+      mapInstance.current.setView([campusOverride.lat, campusOverride.lng], 16);
+      
+      const L = (window as any).L;
+      const customIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41]
+      });
+
+      if (markerInstance.current) {
+        markerInstance.current.setLatLng([campusOverride.lat, campusOverride.lng]);
+      } else {
+        markerInstance.current = L.marker([campusOverride.lat, campusOverride.lng], { icon: customIcon }).addTo(mapInstance.current);
+      }
+      return;
+    }
+
     setIsSearching(true);
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+      // Added viewbox for Dehradun/UPES area to increase priority (approx bounds for Dehradun)
+      const viewbox = "77.8,30.2,78.2,30.5";
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&viewbox=${viewbox}&bounded=0`);
       const data = await res.json();
       if (data && data.length > 0) {
         const L = (window as any).L;
         const lat = parseFloat(data[0].lat);
         const lon = parseFloat(data[0].lon);
         setCoords({ lat, lng: lon });
+        setSelectedName(""); // Clear locked name on new search
         mapInstance.current.setView([lat, lon], 15);
         
         const customIcon = L.icon({
@@ -207,6 +246,13 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   const handleConfirm = async () => {
     if (coords) {
+      if (selectedName) {
+        // If we have a locked name (from Quick Select), use it directly
+        onLocationSelect({ address: selectedName, lat: coords.lat, lng: coords.lng });
+        setIsOpen(false);
+        return;
+      }
+
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}`);
         const data = await res.json();
@@ -274,6 +320,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 onClick={() => {
                   setCoords({ lat: loc.lat, lng: loc.lng });
                   setSearchQuery(loc.name);
+                  setSelectedName(loc.name); // Lock the name
                   if (mapInstance.current) {
                     mapInstance.current.setView([loc.lat, loc.lng], 15);
                     const L = (window as any).L;

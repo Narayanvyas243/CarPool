@@ -25,21 +25,33 @@ const markNotificationsByMetaAsRead = async (userId, type, meta) => {
     const mongoose = require("mongoose");
     const query = { user: userId, type, isRead: false };
     
-    // Explicitly handle nested meta fields with potential ObjectId casting
+    // Using a more robust matching strategy for nested meta fields
+    // This ensures that whether the IDs were stored/passed as strings or ObjectIds, they match.
     if (meta.rideId) {
-      query["meta.rideId"] = mongoose.Types.ObjectId.isValid(meta.rideId) 
+      const rideIdObj = mongoose.Types.ObjectId.isValid(meta.rideId) 
         ? new mongoose.Types.ObjectId(meta.rideId) 
-        : meta.rideId;
+        : null;
+      
+      query["$or"] = query["$or"] || [];
+      query["$or"].push({ "meta.rideId": rideIdObj });
+      query["$or"].push({ "meta.rideId": String(meta.rideId) });
     }
     
     if (meta.requestId) {
-      query["meta.requestId"] = mongoose.Types.ObjectId.isValid(meta.requestId) 
+      const requestIdObj = mongoose.Types.ObjectId.isValid(meta.requestId) 
         ? new mongoose.Types.ObjectId(meta.requestId) 
-        : meta.requestId;
+        : null;
+      
+      query["$or"] = query["$or"] || [];
+      query["$or"].push({ "meta.requestId": requestIdObj });
+      query["$or"].push({ "meta.requestId": String(meta.requestId) });
     }
 
-    const result = await Notification.updateMany(query, { isRead: true });
-    console.log(`[NotificationService] Marked as read: ${result.modifiedCount} notification(s) for user ${userId}`);
+    // If no $or was added, simplify query
+    const finalQuery = query["$or"] ? query : { user: userId, type, isRead: false };
+
+    const result = await Notification.updateMany(finalQuery, { isRead: true });
+    console.log(`[NotificationService] Marked as read: ${result.modifiedCount} notification(s) for user ${userId} (Query Type: ${type})`);
   } catch (error) {
     console.error("Error marking notifications as read:", error);
   }
