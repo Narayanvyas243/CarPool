@@ -20,6 +20,13 @@ const rideRequestSchema = new mongoose.Schema({
   requestedAt: {
     type: Date,
     default: Date.now
+  },
+  isOnboarded: {
+    type: Boolean,
+    default: false
+  },
+  onboardedAt: {
+    type: Date
   }
 }, { _id: true });
 

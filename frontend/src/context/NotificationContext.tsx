@@ -21,6 +21,7 @@ interface NotificationContextType {
   unreadCount: number;
   fetchNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
+  socket: Socket | null;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -98,7 +99,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, fetchNotifications, markAsRead }}
+      value={{ notifications, unreadCount, fetchNotifications, markAsRead, socket }}
     >
       {children}
     </NotificationContext.Provider>

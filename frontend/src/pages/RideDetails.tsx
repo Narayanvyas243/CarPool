@@ -32,6 +32,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import RideMap from "@/components/RideMap";
+import { useLiveTracking } from "../hooks/useLiveTracking";
 
 const RideDetails = () => {
   const { id } = useParams();
@@ -44,6 +45,8 @@ const RideDetails = () => {
   const [selectedPassenger, setSelectedPassenger] = useState<any>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isConfirmingOnboard, setIsConfirmingOnboard] = useState(false);
 
   useEffect(() => {
     fetch(`/api/rides/${id}`)
@@ -169,6 +172,56 @@ const RideDetails = () => {
     req.requester?._id === user.id && req.status === "accepted"
   );
 
+  const myRequest = user && (ride.requests || []).find((req: any) => 
+    req.requester?._id === user.id
+  );
+
+  const isAlreadyOnboarded = myRequest?.isOnboarded;
+
+  // Determine role for tracking
+  const role = isOwner ? 'driver' : (hasBeenAccepted ? 'passenger' : null);
+  const isTrackingActive = !!(role && !isAlreadyOnboarded);
+
+  // Hook for live tracking
+  const { myLocation, otherLocation, distance } = useLiveTracking(
+    id || "", 
+    user?.id || "", 
+    role as any, 
+    isTrackingActive
+  );
+
+  // Show onboarding modal when close (< 15m) and not yet onboarded
+  useEffect(() => {
+    if (distance !== null && distance < 15 && isTrackingActive && !isOwner) {
+      setIsOnboardingOpen(true);
+    }
+  }, [distance, isTrackingActive, isOwner]);
+
+  const handleConfirmOnboard = async () => {
+    if (!user || !myRequest) return;
+    setIsConfirmingOnboard(true);
+    try {
+      const res = await fetch(`/api/rides/${id}/requests/${myRequest._id}/onboard`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to confirm onboarding");
+      
+      toast({ title: "Onboarded! 🎉", description: "You have officially joined the ride." });
+      setIsOnboardingOpen(false);
+
+      // Refresh ride data
+      const upRes = await fetch(`/api/rides/${id}`);
+      setRide(await upRes.json());
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsConfirmingOnboard(false);
+    }
+  };
+
   return (
     <Layout showHeader={false} showNav={false}>
       {/* Custom Header */}
@@ -226,7 +279,31 @@ const RideDetails = () => {
                 lng: ride.toCoords.lng, 
                 name: ride.toLocation 
               }} 
+              markers={myLocation && otherLocation ? [
+                { lat: myLocation.lat, lng: myLocation.lng, label: "You", color: "blue" },
+                { lat: otherLocation.lat, lng: otherLocation.lng, label: role === 'driver' ? "Passenger" : "Driver", color: "red" }
+              ] : undefined}
             />
+            
+            {/* Real-time Tracking Info Bar */}
+            {isTrackingActive && distance !== null && (
+              <div className="mt-2 p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-center justify-between animate-pulse-subtle">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <span className="text-xs font-semibold text-primary">Live Tracking Active</span>
+                </div>
+                <span className="text-xs font-bold text-foreground">
+                  {distance < 1000 ? `${Math.round(distance)}m` : `${(distance/1000).toFixed(1)}km`} away
+                </span>
+              </div>
+            )}
+            
+            {isAlreadyOnboarded && (
+              <div className="mt-2 p-3 bg-success/10 rounded-xl border border-success/20 flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                <span className="text-xs font-bold text-success">You are Onboarded</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -558,6 +635,31 @@ const RideDetails = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Onboarding Dialog */}
+      <Dialog open={isOnboardingOpen} onOpenChange={setIsOnboardingOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Are you onboard? 🚗</DialogTitle>
+            <DialogDescription>
+              We detected that you and the driver are now at the same location. Please confirm once you've entered the vehicle.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 flex flex-col items-center gap-4">
+             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center animate-bounce">
+                <BadgeCheck className="h-8 w-8 text-success" />
+             </div>
+             <p className="text-center text-sm text-muted-foreground">
+               Confirming your onboarding helps us track the ride completion and ensure campus safety.
+             </p>
+          </div>
+          <div className="flex gap-3">
+             <Button variant="outline" className="flex-1" onClick={() => setIsOnboardingOpen(false)}>Not yet</Button>
+             <Button className="flex-1 bg-success hover:bg-success/90" onClick={handleConfirmOnboard} disabled={isConfirmingOnboard}>
+               {isConfirmingOnboard ? "Confirming..." : "Yes, I'm Onboard"}
+             </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>

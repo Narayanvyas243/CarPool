@@ -3,11 +3,13 @@ import React, { useEffect, useRef } from "react";
 interface RideMapProps {
   from: { lat: number; lng: number; name: string };
   to: { lat: number; lng: number; name: string };
+  markers?: Array<{ lat: number; lng: number; label: string; color: string }>;
 }
 
-const RideMap = ({ from, to }: RideMapProps) => {
+const RideMap = ({ from, to, markers }: RideMapProps) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const liveMarkersRef = useRef<Map<string, any>>(new Map());
 
   useEffect(() => {
     if (mapContainerRef.current && (window as any).L && !mapInstance.current) {
@@ -24,10 +26,9 @@ const RideMap = ({ from, to }: RideMapProps) => {
         scrollWheelZoom: false
       }).setView(fromPos, 13);
 
-      // Add Tile Layer (CartoDB Voyager)
+      // Add Tile Layer
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapInstance.current);
 
-      // Icon fix via CDN
       const customIcon = L.icon({
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -35,11 +36,15 @@ const RideMap = ({ from, to }: RideMapProps) => {
         iconAnchor: [12, 41]
       });
 
-      // Markers
       L.marker(fromPos, { icon: customIcon }).addTo(mapInstance.current).bindPopup(`Pickup: ${from.name}`);
-      L.marker(toPos, { icon: customIcon }).addTo(mapInstance.current).bindPopup(`Drop-off: ${to.name}`);
+      const dropIcon = L.icon({
+        iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41]
+      });
+      L.marker(toPos, { icon: dropIcon }).addTo(mapInstance.current).bindPopup(`Drop-off: ${to.name}`);
 
-      // Path
       L.polyline([fromPos, toPos], {
         color: 'hsl(var(--primary))',
         weight: 4,
@@ -47,11 +52,9 @@ const RideMap = ({ from, to }: RideMapProps) => {
         dashArray: '10, 10'
       }).addTo(mapInstance.current);
 
-      // Fit bounds
       const bounds = L.latLngBounds([fromPos, toPos]);
       mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
 
-      // Invalidate size for stability
       setTimeout(() => {
         if (mapInstance.current) mapInstance.current.invalidateSize();
       }, 300);
@@ -63,7 +66,47 @@ const RideMap = ({ from, to }: RideMapProps) => {
         mapInstance.current = null;
       }
     };
-  }, [from, to]);
+  }, [from.lat, from.lng, to.lat, to.lng]);
+
+  // Handle dynamic markers (Live Tracking)
+  useEffect(() => {
+    if (!mapInstance.current || !markers || !(window as any).L) return;
+    const L = (window as any).L;
+
+    // Clear old markers that aren't in the new list
+    const currentLabels = new Set(markers.map(m => m.label));
+    liveMarkersRef.current.forEach((marker, label) => {
+        if (!currentLabels.has(label)) {
+            mapInstance.current.removeLayer(marker);
+            liveMarkersRef.current.delete(label);
+        }
+    });
+
+    // Update or add markers
+    markers.forEach(m => {
+        const existing = liveMarkersRef.current.get(m.label);
+        if (existing) {
+            existing.setLatLng([m.lat, m.lng]);
+        } else {
+            const circleMarker = L.circleMarker([m.lat, m.lng], {
+                radius: 8,
+                fillColor: m.color === 'blue' ? '#3b82f6' : '#ef4444',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(mapInstance.current).bindPopup(m.label);
+            liveMarkersRef.current.set(m.label, circleMarker);
+        }
+    });
+
+    // Adjust bounds if live markers are outside
+    if (markers.length > 0) {
+        const markerPoints = markers.map(m => [m.lat, m.lng]);
+        const allPoints = [...markerPoints, [from.lat, from.lng], [to.lat, to.lng]] as [number, number][];
+        mapInstance.current.fitBounds(L.latLngBounds(allPoints), { padding: [40, 40] });
+    }
+  }, [markers, from, to]);
 
   if (!from.lat || !from.lng || !to.lat || !to.lng) {
     return (

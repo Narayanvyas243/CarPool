@@ -16,6 +16,30 @@ const initSocket = (httpServer) => {
     socket.on("register", (userId) => {
       if (!userId) return;
       userSocketMap.set(String(userId), socket.id);
+      socket.userId = String(userId);
+    });
+
+    // Join a private room for a specific ride to share locations
+    socket.on("join-ride", (rideId) => {
+      if (!rideId) return;
+      const room = `ride:${rideId}`;
+      socket.join(room);
+      console.log(`[Socket] User ${socket.userId || socket.id} joined room ${room}`);
+    });
+
+    // Broadcast location to everyone else in the ride room
+    socket.on("location-update", ({ rideId, lat, lng, role }) => {
+      if (!rideId || !lat || !lng) return;
+      const room = `ride:${rideId}`;
+      
+      // Send to everyone in the room EXCEPT the sender
+      socket.to(room).emit("location:received", {
+        userId: socket.userId,
+        lat,
+        lng,
+        role, // 'driver' or 'passenger'
+        timestamp: new Date()
+      });
     });
 
     socket.on("disconnect", () => {
