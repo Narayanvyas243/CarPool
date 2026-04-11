@@ -26,6 +26,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ const Profile = () => {
 
   const fetchDashboard = () => {
     if (user?.id) {
-      fetch(`/api/rides/dashboard/${user.id}`)
+      fetch(getApiUrl(`/api/rides/dashboard/${user.id}`))
         .then(res => res.json())
         .then(data => {
           if (data.dashboard) {
@@ -70,7 +72,7 @@ const Profile = () => {
   useEffect(() => {
     fetchDashboard();
     if (user?.id) {
-      fetch(`/api/users/${user.id}`)
+      fetch(getApiUrl(`/api/users/${user.id}`))
         .then(res => res.json())
         .then(data => {
           if (data._id) {
@@ -83,7 +85,7 @@ const Profile = () => {
 
   const handleRequestAction = async (rideId: string, requestId: string, action: 'accept' | 'reject') => {
     try {
-      const res = await fetch(`/api/rides/${rideId}/requests/${requestId}`, {
+      const res = await fetch(getApiUrl(`/api/rides/${rideId}/requests/${requestId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ownerId: user?.id })
@@ -103,7 +105,7 @@ const Profile = () => {
   const handleCancelRide = async (rideId: string) => {
     if (!confirm("Are you sure you want to cancel this ride? This will notify all passengers.")) return;
     try {
-      const res = await fetch(`/api/rides/${rideId}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/api/rides/${rideId}`), { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) {
         toast({ title: "Ride Cancelled", description: data.message });

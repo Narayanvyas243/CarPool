@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { getApiUrl } from "../apiConfig";
+
 
 interface Notification {
   _id: string;
@@ -36,7 +38,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const fetchNotifications = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`/api/notifications/${user.id}`);
+      const res = await fetch(getApiUrl(`/api/notifications/${user.id}`));
       const data = await res.json();
       if (res.ok) {
         setNotifications(data.notifications);
@@ -48,7 +50,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   const markAsRead = async (id: string) => {
     try {
-      const res = await fetch(`/api/notifications/${id}/read`, {
+      const res = await fetch(getApiUrl(`/api/notifications/${id}/read`), {
         method: "PATCH",
       });
       if (res.ok) {
@@ -65,7 +67,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     if (user?.id) {
       fetchNotifications();
 
-      const newSocket = io(window.location.origin);
+      const newSocket = io(getApiUrl("/"));
       setSocket(newSocket);
 
       newSocket.on("connect", () => {

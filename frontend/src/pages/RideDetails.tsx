@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
+
 import {
   Dialog,
   DialogContent,
@@ -49,7 +51,7 @@ const RideDetails = () => {
   const [isConfirmingOnboard, setIsConfirmingOnboard] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/rides/${id}`)
+    fetch(getApiUrl(`/api/rides/${id}`))
       .then(res => res.json())
       .then(data => {
         setRide(data);
@@ -69,7 +71,7 @@ const RideDetails = () => {
 
     setIsJoining(true);
     try {
-      const res = await fetch(`/api/rides/${id}/request`, {
+      const res = await fetch(getApiUrl(`/api/rides/${id}/request`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requesterId: user.id, seatsRequested: 1 })
@@ -99,7 +101,7 @@ const RideDetails = () => {
     
     setIsUpdating(requestId);
     try {
-      const res = await fetch(`/api/rides/${id}/requests/${requestId}`, {
+      const res = await fetch(getApiUrl(`/api/rides/${id}/requests/${requestId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ownerId: user.id })
@@ -201,7 +203,7 @@ const RideDetails = () => {
     if (!user || !myRequest) return;
     setIsConfirmingOnboard(true);
     try {
-      const res = await fetch(`/api/rides/${id}/requests/${myRequest._id}/onboard`, {
+      const res = await fetch(getApiUrl(`/api/rides/${id}/requests/${myRequest._id}/onboard`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id })
@@ -213,7 +215,7 @@ const RideDetails = () => {
       setIsOnboardingOpen(false);
 
       // Refresh ride data
-      const upRes = await fetch(`/api/rides/${id}`);
+      const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
       setRide(await upRes.json());
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

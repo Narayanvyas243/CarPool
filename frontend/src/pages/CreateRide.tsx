@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
 import MapPicker from "@/components/MapPicker";
 
 const CreateRide = () => {
@@ -61,7 +62,7 @@ const CreateRide = () => {
     try {
       const dateTimeString = new Date(`${date}T${time}`).toISOString();
 
-      const res = await fetch('/api/rides/create', {
+      const res = await fetch(getApiUrl('/api/rides/create'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

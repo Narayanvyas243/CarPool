@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
+
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -36,7 +38,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/users/login', {
+      const res = await fetch(getApiUrl('/api/users/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

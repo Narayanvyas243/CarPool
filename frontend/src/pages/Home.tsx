@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import SearchBar from "@/components/SearchBar";
 import RideCard, { RideData } from "@/components/RideCard";
@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 
 // Removed mock data
 
-import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
+
 
 const Home = () => {
   const [rides, setRides] = useState<RideData[]>([]);
@@ -20,7 +21,7 @@ const Home = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetch('/api/rides/all')
+    fetch(getApiUrl('/api/rides/all'))
       .then(res => res.json())
       .then(data => {
         if (data.rides) {
@@ -52,7 +53,7 @@ const Home = () => {
       .catch(err => console.error("Error fetching rides:", err));
 
     if (user?.id) {
-       fetch(`/api/rides/dashboard/${user.id}`)
+       fetch(getApiUrl(`/api/rides/dashboard/${user.id}`))
         .then(res => res.json())
         .then(data => {
           if (data.dashboard) {

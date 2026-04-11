@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { getApiUrl } from "../apiConfig";
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
@@ -23,7 +24,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/users/forgot-password", {
+      const res = await fetch(getApiUrl('/api/users/forgot-password'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -46,7 +47,7 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/users/verify-forgot-otp", {
+      const res = await fetch(getApiUrl("/api/users/verify-forgot-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
@@ -73,7 +74,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/users/reset-password", {
+      const res = await fetch(getApiUrl('/api/users/reset-password'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, newPassword }),

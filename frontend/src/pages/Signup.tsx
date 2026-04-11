@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
 
 const Signup = () => {
   const [step, setStep] = useState<"details" | "otp">("details");
@@ -70,7 +71,7 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      const res = await fetch('/api/users/signup', {
+      const res = await fetch(getApiUrl('/api/users/signup'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -105,7 +106,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/users/verify-otp', {
+      const res = await fetch(getApiUrl('/api/users/verify-otp'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

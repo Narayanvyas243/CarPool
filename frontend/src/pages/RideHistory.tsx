@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
+
 
 const RideHistory = () => {
   const navigate = useNavigate();
@@ -24,7 +26,7 @@ const RideHistory = () => {
     if (!user?.id) return;
     try {
       setLoading(true);
-      const res = await fetch(`/api/rides/dashboard/${user.id}`);
+      const res = await fetch(getApiUrl(`/api/rides/dashboard/${user.id}`));
       const data = await res.json();
       if (data.dashboard) {
         // Compose a unified list of rides (taken & offered)

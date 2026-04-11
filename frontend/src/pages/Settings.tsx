@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
+import { getApiUrl } from "../apiConfig";
 import { 
   User, 
   Lock, 
@@ -77,7 +78,7 @@ const Settings = () => {
 
     setIsProfileUpdating(true);
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
+      const res = await fetch(getApiUrl(`/api/users/${user.id}`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profileData),
@@ -106,7 +107,7 @@ const Settings = () => {
 
     setIsPasswordUpdating(true);
     try {
-      const res = await fetch(`/api/users/${user.id}/password`, {
+      const res = await fetch(getApiUrl(`/api/users/${user.id}/password`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

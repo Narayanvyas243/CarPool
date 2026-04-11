@@ -7,6 +7,8 @@ import { Car, Map as MapIcon, List } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import GlobalRideMap from "@/components/GlobalRideMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getApiUrl } from "../apiConfig";
+
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -22,7 +24,7 @@ const Search = () => {
     if (!fromQuery && !toQuery) return;
 
     setIsLoading(true);
-    fetch(`/api/rides/search?from=${encodeURIComponent(fromQuery)}&to=${encodeURIComponent(toQuery)}`)
+    fetch(getApiUrl(`/api/rides/search?from=${encodeURIComponent(fromQuery)}&to=${encodeURIComponent(toQuery)}`))
       .then(res => res.json())
       .then(data => {
         if (data.rides) {
