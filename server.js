@@ -6,6 +6,7 @@ const app = require("./src/app");
 const { initSocket } = require("./src/socket");
 
 const PORT = process.env.PORT || 5000;
+const ENV = process.env.NODE_ENV || "development";
 
 const startServer = async () => {
   try {
@@ -13,7 +14,7 @@ const startServer = async () => {
     const server = http.createServer(app);
     initSocket(server);
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`🚀 Server running in ${ENV} mode on port ${PORT}`);
     });
   } catch (error) {
     console.error("Server startup failed because database connection failed.");
