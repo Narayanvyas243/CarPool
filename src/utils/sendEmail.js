@@ -4,13 +4,14 @@ const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", mes
   try {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true, // Use SSL
+      port: 587,
+      secure: false, // Use STARTTLS
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       },
-      connectionTimeout: 10000, // 10 seconds timeout
+      requireTLS: true,
+      connectionTimeout: 10000, 
     });
 
     await transporter.sendMail({
