@@ -15,7 +15,11 @@ router.post("/signup", async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      if (existingUser.isVerified) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+      // If user exists but is not verified, we allow them to "re-signup" 
+      // This will update their details and send a new OTP.
     }
 
     // Automatic Role Assignment
@@ -43,19 +47,32 @@ router.post("/signup", async (req, res) => {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-    // Create user with OTP
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone,
-      role,
-      gender: normalizedGender,
-      otp,
-      otpExpiry: Date.now() + 5 * 60 * 1000, // 5 minutes
-      isVerified: false
-    });
+    if (existingUser) {
+      // Update existing unverified user
+      existingUser.name = name;
+      existingUser.password = hashedPassword;
+      existingUser.phone = phone;
+      existingUser.role = role;
+      existingUser.gender = normalizedGender;
+      existingUser.otp = otp;
+      existingUser.otpExpiry = otpExpiry;
+      await existingUser.save();
+    } else {
+      // Create new user
+      await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        phone,
+        role,
+        gender: normalizedGender,
+        otp,
+        otpExpiry,
+        isVerified: false
+      });
+    }
 
     // Send OTP Email
     await sendEmail(email, otp);
