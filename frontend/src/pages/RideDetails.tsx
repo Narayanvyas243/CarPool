@@ -270,7 +270,7 @@ const RideDetails = () => {
         </Card>
 
         {/* Map View */}
-        {ride.fromCoords && ride.toCoords && (
+        {ride.fromLocation && ride.toLocation && (
           <div className="animate-fade-in" style={{ animationDelay: "0.02s" }}>
             <RideMap 
               from={{ 
