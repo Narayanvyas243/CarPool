@@ -68,7 +68,7 @@ const GlobalRideMap = ({ rides, onSelectRide }: GlobalRideMapProps) => {
             <div className="p-1 space-y-2 min-w-[150px] font-sans">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary border border-primary/20">
-                  {ride.driverName.split(' ').map(n => n[0]).join('')}
+                  {(ride.driverName || "U").split(' ').filter(Boolean).map(n => n[0]).join('')}
                 </div>
                 <div>
                   <p className="font-bold text-sm leading-tight text-slate-800">{ride.driverName}</p>

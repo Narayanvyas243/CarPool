@@ -274,13 +274,13 @@ const RideDetails = () => {
           <div className="animate-fade-in" style={{ animationDelay: "0.02s" }}>
             <RideMap 
               from={{ 
-                lat: ride.fromCoords.lat, 
-                lng: ride.fromCoords.lng, 
+                lat: ride.fromCoords?.lat, 
+                lng: ride.fromCoords?.lng, 
                 name: ride.fromLocation 
               }} 
               to={{ 
-                lat: ride.toCoords.lat, 
-                lng: ride.toCoords.lng, 
+                lat: ride.toCoords?.lat, 
+                lng: ride.toCoords?.lng, 
                 name: ride.toLocation 
               }} 
               markers={[
@@ -322,7 +322,7 @@ const RideDetails = () => {
               <div className="flex items-center gap-4">
                 <Avatar className="h-14 w-14 ring-2 ring-primary/10">
                   <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                    {(ride.createdBy?.name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                    {(ride.createdBy?.name || 'U').split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -421,7 +421,7 @@ const RideDetails = () => {
                   <div className="relative">
                     <Avatar className={`h-10 w-10 ${isOwner ? 'ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all' : ''}`}>
                       <AvatarFallback className="bg-secondary text-sm">
-                        {passenger.name.split(' ').map((n: string) => n[0]).join('')}
+                        {(passenger.name || "P").split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     {isOwner && passenger.phone && (
@@ -464,7 +464,7 @@ const RideDetails = () => {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 ring-2 ring-primary/10">
                           <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
-                            {(req.requester?.name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                            {(req.requester?.name || 'U').split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -553,7 +553,7 @@ const RideDetails = () => {
               <div className="bg-gradient-primary pt-8 pb-12 px-6 text-center">
                 <Avatar className="h-20 w-20 mx-auto ring-4 ring-background/20 shadow-lg">
                   <AvatarFallback className="bg-background text-primary text-xl font-bold">
-                    {selectedPassenger.name.split(' ').map((n: string) => n[0]).join('')}
+                    {(selectedPassenger.name || "P").split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="mt-3 text-primary-foreground">

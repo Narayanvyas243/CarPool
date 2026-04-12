@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 
 interface RideMapProps {
-  from: { lat: number; lng: number; name: string };
-  to: { lat: number; lng: number; name: string };
+  from: { lat: number | null | undefined; lng: number | null | undefined; name: string };
+  to: { lat: number | null | undefined; lng: number | null | undefined; name: string };
   markers?: Array<{ lat: number; lng: number; label: string; color: string }>;
 }
 
@@ -23,7 +23,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
       let toLng = to.lng;
 
       // Geocoding Fallback if coords are missing
-      if (!fromLat || !fromLng) {
+      if (fromLat === null || fromLat === undefined || fromLng === null || fromLng === undefined) {
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(from.name)}`);
           const data = await res.json();
@@ -36,7 +36,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         }
       }
 
-      if (!toLat || !toLng) {
+      if (toLat === null || toLat === undefined || toLng === null || toLng === undefined) {
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(to.name)}`);
           const data = await res.json();
@@ -49,7 +49,8 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         }
       }
 
-      if (!fromLat || !fromLng || !toLat || !toLng) return;
+      if (fromLat === null || fromLat === undefined || fromLng === null || fromLng === undefined || 
+          toLat === null || toLat === undefined || toLng === null || toLng === undefined) return;
 
       if (!mapInstance.current) {
         const fromPos: [number, number] = [fromLat, fromLng];
@@ -176,8 +177,18 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
     // Adjust bounds if live markers are outside
     if (markers.length > 0) {
         const markerPoints = markers.map(m => [m.lat, m.lng]);
-        const allPoints = [...markerPoints, [from.lat, from.lng], [to.lat, to.lng]] as [number, number][];
-        mapInstance.current.fitBounds(L.latLngBounds(allPoints), { padding: [40, 40] });
+        const allPoints = [...markerPoints];
+        
+        if (from.lat !== null && from.lat !== undefined && from.lng !== null && from.lng !== undefined) {
+          allPoints.push([from.lat, from.lng]);
+        }
+        if (to.lat !== null && to.lat !== undefined && to.lng !== null && to.lng !== undefined) {
+          allPoints.push([to.lat, to.lng]);
+        }
+        
+        if (allPoints.length > 0) {
+          mapInstance.current.fitBounds(L.latLngBounds(allPoints as [number, number][]), { padding: [40, 40] });
+        }
     }
   }, [markers, from, to]);
 

@@ -45,7 +45,7 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
               <Avatar className="h-11 w-11 ring-2 ring-primary/10">
                 <AvatarImage src={ride.driverAvatar} alt={ride.driverName} />
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                  {ride.driverName.split(' ').map(n => n[0]).join('')}
+                  {(ride.driverName || "U").split(' ').filter(Boolean).map(n => n[0]).join('')}
                 </AvatarFallback>
               </Avatar>
               <div>
