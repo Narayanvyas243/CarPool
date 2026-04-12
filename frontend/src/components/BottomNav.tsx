@@ -24,7 +24,7 @@ const BottomNav = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 w-16 h-full transition-colors",
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors active:scale-95",
                 isActive 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"

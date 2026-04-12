@@ -21,7 +21,7 @@ const Layout = ({
   return (
     <div className="min-h-screen bg-background">
       {showHeader && <Header userName={userName} userAvatar={userAvatar} />}
-      <main className={`${showNav ? 'pb-20' : ''}`}>
+      <main className={`${showNav ? 'pb-24' : ''}`}>
         {children}
       </main>
       {showNav && <BottomNav />}

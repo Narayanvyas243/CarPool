@@ -33,6 +33,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   const [libStatus, setLibStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [selectedName, setSelectedName] = useState("");
   const [mapType, setMapType] = useState<'voyager' | 'satellite'>('voyager');
+  const [isLocating, setIsLocating] = useState(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -242,49 +243,69 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   const handleLocateMe = () => {
     if (navigator.geolocation && mapInstance.current) {
+      setIsLocating(true);
       const L = (window as any).L;
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const { latitude, longitude } = pos.coords;
-        setCoords({ lat: latitude, lng: longitude });
-        mapInstance.current?.setView([latitude, longitude], 16);
-        
-        const customIcon = L.icon({
-          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41]
-        });
+      
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setCoords({ lat: latitude, lng: longitude });
+          mapInstance.current?.setView([latitude, longitude], 16);
+          
+          const customIcon = L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+          });
 
-        if (markerInstance.current) {
-          markerInstance.current.setLatLng([latitude, longitude]);
-        } else {
-          markerInstance.current = L.marker([latitude, longitude], { icon: customIcon }).addTo(mapInstance.current!);
-        }
-
-        // Smart Proximity Check - If within 600m of a known campus, prioritize our campus name
-        const findNearbyCampus = () => {
-          for (const loc of QUICK_LOCATIONS) {
-            // Rough distance check (approx 0.005 degrees ~ 550m)
-            const dist = Math.sqrt(Math.pow(loc.lat - latitude, 2) + Math.pow(loc.lng - longitude, 2));
-            if (dist < 0.006) return loc.name;
+          if (markerInstance.current) {
+            markerInstance.current.setLatLng([latitude, longitude]);
+          } else {
+            markerInstance.current = L.marker([latitude, longitude], { icon: customIcon }).addTo(mapInstance.current!);
           }
-          return null;
-        };
 
-        const nearbyCampus = findNearbyCampus();
-        if (nearbyCampus) {
-          setSearchQuery(nearbyCampus);
-          setSelectedName(nearbyCampus);
-        } else {
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-            .then(res => res.json())
-            .then(data => {
-              const shortAddress = data.display_name.split(',').slice(0, 2).join(',');
-              setSearchQuery(shortAddress);
-              setSelectedName("");
-            });
-        }
-      });
+          // Smart Proximity Check
+          const findNearbyCampus = () => {
+            for (const loc of QUICK_LOCATIONS) {
+              const dist = Math.sqrt(Math.pow(loc.lat - latitude, 2) + Math.pow(loc.lng - longitude, 2));
+              if (dist < 0.006) return loc.name;
+            }
+            return null;
+          };
+
+          const nearbyCampus = findNearbyCampus();
+          if (nearbyCampus) {
+            setSearchQuery(nearbyCampus);
+            setSelectedName(nearbyCampus);
+          } else {
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+              .then(res => res.json())
+              .then(data => {
+                const shortAddress = data.display_name.split(',').slice(0, 2).join(',');
+                setSearchQuery(shortAddress);
+                setSelectedName("");
+              })
+              .catch(() => {
+                setSearchQuery(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+              });
+          }
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          setIsLocating(false);
+          let errorMsg = "Could not get your location.";
+          if (error.code === 1) errorMsg = "Location permission denied. Please allow location access in your browser settings.";
+          else if (error.code === 2) errorMsg = "Location information is unavailable.";
+          else if (error.code === 3) errorMsg = "The request to get user location timed out.";
+          
+          alert(errorMsg); // Using alert as fallback, but could use toast
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
     }
   };
 
@@ -346,8 +367,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 </button>
               )}
             </div>
-            <Button variant="outline" onClick={handleLocateMe} className="h-11 px-3 border-slate-200 shadow-sm" title="Locate Me">
-              <Navigation className="h-4 w-4 text-slate-600" />
+            <Button variant="outline" onClick={handleLocateMe} disabled={isLocating} className="h-11 px-3 border-slate-200 shadow-sm" title="Locate Me">
+              {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4 text-slate-600" />}
             </Button>
             <Button onClick={handleSearch} disabled={isSearching} className="px-6 h-11 font-bold shadow-md">
               {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
