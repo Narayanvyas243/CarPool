@@ -1,10 +1,40 @@
 const { google } = require('googleapis');
+const nodemailer = require('nodemailer');
 
 const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", message = `Your OTP is ${otp}. It will expire in 5 minutes.`) => {
   const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
   const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
   const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
+
+  // Fallback to SMTP if Gmail API credentials are missing
+  if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
+    console.log("Gmail API credentials missing. Falling back to SMTP...");
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: subject,
+      text: message
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent successfully via SMTP: ${subject}`);
+      return;
+    } catch (error) {
+      console.error("SMTP sending failed:", error);
+      throw error;
+    }
+  }
 
   const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
   oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
@@ -45,3 +75,4 @@ const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", mes
 };
 
 module.exports = sendEmail;
+

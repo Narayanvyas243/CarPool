@@ -86,7 +86,7 @@ const RideDetails = () => {
       });
 
       // Refresh ride data
-      const upRes = await fetch(`/api/rides/${id}`);
+      const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
       setRide(await upRes.json());
       
     } catch (err: any) {
@@ -116,7 +116,7 @@ const RideDetails = () => {
       });
 
       // Refresh ride data
-      const upRes = await fetch(`/api/rides/${id}`);
+      const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
       setRide(await upRes.json());
       
     } catch (err: any) {
@@ -126,55 +126,13 @@ const RideDetails = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Layout showHeader={false} showNav={false}>
-        <div className="flex items-center justify-center h-screen">Loading...</div>
-      </Layout>
-    );
-  }
+  const isOwner = user && ride?.createdBy && ride.createdBy._id === user.id;
 
-  if (!ride || ride.message === "Ride not found") {
-    return (
-      <Layout showHeader={false} showNav={false}>
-        <div className="flex flex-col items-center justify-center p-12 text-center">
-          <AlertCircle className="h-10 w-10 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Ride Not Found</h2>
-          <Button onClick={() => navigate("/")}>Go Home</Button>
-        </div>
-      </Layout>
-    );
-  }
-
-  const dateObj = new Date(ride.time);
-  const formattedDate = dateObj.toLocaleDateString();
-  const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  // Compute accepted passengers
-  const passengers = (ride.requests || [])
-    .filter((req: any) => req.status === "accepted")
-    .map((req: any) => ({
-      name: req.requester?.name || "Passenger",
-      avatar: "",
-      phone: req.requester?.phone || "",
-      role: req.requester?.role || "student",
-      email: req.requester?.email || ""
-    }));
-
-  const pendingRequests = (ride.requests || [])
-    .filter((req: any) => req.status === "pending");
-
-  const isOwner = user && ride.createdBy && ride.createdBy._id === user.id;
-
-  const hasRequested = user && (ride.requests || []).some((req: any) => 
-    req.requester?._id === user.id && req.status === "pending"
-  );
-  
-  const hasBeenAccepted = user && (ride.requests || []).some((req: any) => 
+  const hasBeenAccepted = user && (ride?.requests || []).some((req: any) => 
     req.requester?._id === user.id && req.status === "accepted"
   );
-
-  const myRequest = user && (ride.requests || []).find((req: any) => 
+  
+  const myRequest = user && (ride?.requests || []).find((req: any) => 
     req.requester?._id === user.id
   );
 
@@ -198,6 +156,50 @@ const RideDetails = () => {
       setIsOnboardingOpen(true);
     }
   }, [distance, isTrackingActive, isOwner]);
+
+  if (isLoading) {
+    return (
+      <Layout showHeader={false} showNav={false}>
+        <div className="flex items-center justify-center h-screen">Loading...</div>
+      </Layout>
+    );
+  }
+
+  if (!ride || ride.message === "Ride not found") {
+    return (
+      <Layout showHeader={false} showNav={false}>
+        <div className="flex flex-col items-center justify-center p-12 text-center">
+          <AlertCircle className="h-10 w-10 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Ride Not Found</h2>
+          <Button onClick={() => navigate("/")}>Go Home</Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const rideTime = ride.time || new Date().toISOString();
+  const dateObj = new Date(rideTime);
+  const formattedDate = dateObj.toLocaleDateString();
+  const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Compute accepted passengers
+  const passengers = (ride.requests || [])
+    .filter((req: any) => req.status === "accepted")
+    .map((req: any) => ({
+      name: req.requester?.name || "Passenger",
+      avatar: "",
+      phone: req.requester?.phone || "",
+      role: req.requester?.role || "student",
+      email: req.requester?.email || ""
+    }));
+
+  const pendingRequests = (ride.requests || [])
+    .filter((req: any) => req.status === "pending");
+
+  const hasRequested = user && (ride.requests || []).some((req: any) => 
+    req.requester?._id === user.id && req.status === "pending"
+  );
+  
 
   const handleConfirmOnboard = async () => {
     if (!user || !myRequest) return;
@@ -431,7 +433,7 @@ const RideDetails = () => {
                   </span>
                 </div>
               ))}
-              {Array.from({ length: ride.seatsAvailable }).map((_, i) => (
+              {Array.from({ length: Math.max(0, ride.seatsAvailable || 0) }).map((_, i) => (
                 <div key={`empty-${i}`} className="flex flex-col items-center gap-1">
                   <div className="h-10 w-10 rounded-full border-2 border-dashed border-muted flex items-center justify-center">
                     <Users className="h-4 w-4 text-muted-foreground/50" />
