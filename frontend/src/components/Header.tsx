@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Clock, Trash2, Info } from "lucide-react";
+import { Bell, CheckCircle2, Clock, Trash2, Info, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 const Header = ({ userName = "Guest", userAvatar, showNotification = true }: HeaderProps) => {
-  const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+  const initials = (userName || "Guest").split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || "G";
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const navigate = useNavigate();
 
@@ -49,7 +49,7 @@ const Header = ({ userName = "Guest", userAvatar, showNotification = true }: Hea
       <div className="container flex items-center justify-between h-16 px-4">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center">
-            <span className="text-lg font-bold text-primary-foreground">S</span>
+            <Car className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex flex-col justify-center">
             <h1 className="text-xl font-extrabold tracking-[-0.04em] leading-none mb-0.5">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, GraduationCap, Users } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, GraduationCap, Users, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,7 +75,7 @@ const Login = () => {
       {/* Hero Section */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 pt-8 pb-4">
         <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center mb-4 shadow-elevated animate-fade-in">
-          <span className="text-3xl font-bold text-primary-foreground">U</span>
+          <Car className="h-8 w-8 text-primary-foreground" />
         </div>
         <h1 className="text-3xl font-bold text-foreground mb-1 animate-fade-in">
           SmartPool

@@ -111,7 +111,12 @@ const Home = () => {
         <div className="space-y-4" id="available-rides">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Available Rides</h2>
-            <Button variant="ghost" size="sm" className="text-primary">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-primary"
+              onClick={() => navigate("/search")}
+            >
               See all
             </Button>
           </div>
