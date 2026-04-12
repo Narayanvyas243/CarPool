@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, ArrowLeft, Phone, BadgeCheck } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, ArrowLeft, Phone, BadgeCheck, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,7 +158,7 @@ const Signup = () => {
       {/* Header */}
       <div className="flex flex-col items-center px-4 pt-4 pb-6">
         <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center mb-3 shadow-soft">
-          <span className="text-2xl font-bold text-primary-foreground">U</span>
+          <Car className="h-7 w-7 text-primary-foreground" />
         </div>
         <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
         <p className="text-muted-foreground text-sm">Join the UPES ride-sharing community</p>
