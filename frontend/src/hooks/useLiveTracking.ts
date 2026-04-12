@@ -73,8 +73,11 @@ export const useLiveTracking = (rideId: string, userId: string, role: 'driver' |
     if (!socket || !active) return;
 
     const handleOtherLocation = (data: any) => {
+      console.log("[Tracking] Received location update:", data);
+      
       // Only care if it's from the same ride and not from me
-      if (data.userId !== userId) {
+      if (data.userId && data.userId !== userId) {
+        console.log("[Tracking] Setting other location for user:", data.userId);
         setOtherLocation({ lat: data.lat, lng: data.lng, role: data.role });
       }
     };

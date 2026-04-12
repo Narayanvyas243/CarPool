@@ -283,21 +283,25 @@ const RideDetails = () => {
                 lng: ride.toCoords.lng, 
                 name: ride.toLocation 
               }} 
-              markers={myLocation && otherLocation ? [
-                { lat: myLocation.lat, lng: myLocation.lng, label: "You", color: "blue" },
-                { lat: otherLocation.lat, lng: otherLocation.lng, label: role === 'driver' ? "Passenger" : "Driver", color: "red" }
-              ] : undefined}
+              markers={[
+                ...(myLocation ? [{ lat: myLocation.lat, lng: myLocation.lng, label: "You", color: "blue" }] : []),
+                ...(otherLocation ? [{ lat: otherLocation.lat, lng: otherLocation.lng, label: role === 'driver' ? "Passenger" : "Driver", color: "red" }] : [])
+              ]}
             />
             
             {/* Real-time Tracking Info Bar */}
-            {isTrackingActive && distance !== null && (
+            {isTrackingActive && (
               <div className="mt-2 p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-center justify-between animate-pulse-subtle">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <span className="text-xs font-semibold text-primary">Live Tracking Active</span>
+                  <div className={`w-2 h-2 rounded-full ${otherLocation ? 'bg-success' : 'bg-warning'} animate-pulse`} />
+                  <span className="text-xs font-semibold text-primary">
+                    {otherLocation ? 'Live Tracking Active' : 'Waiting for connection...'}
+                  </span>
                 </div>
                 <span className="text-xs font-bold text-foreground">
-                  {distance < 1000 ? `${Math.round(distance)}m` : `${(distance/1000).toFixed(1)}km`} away
+                  {distance !== null 
+                    ? (distance < 1000 ? `${Math.round(distance)}m away` : `${(distance/1000).toFixed(1)}km away`)
+                    : (otherLocation ? 'Calculating...' : 'Initializing...')}
                 </span>
               </div>
             )}
