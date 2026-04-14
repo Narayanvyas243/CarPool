@@ -34,6 +34,23 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   const [selectedName, setSelectedName] = useState("");
   const [mapType, setMapType] = useState<'voyager' | 'satellite'>('voyager');
   const [isLocating, setIsLocating] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Dehradun Bounding Box
+  const DDN_BOUNDS = {
+    minLat: 30.15,
+    maxLat: 30.55,
+    minLng: 77.75,
+    maxLng: 78.30
+  };
+
+  const isLocationInDehradun = (lat: number, lng: number) => {
+    return lat >= DDN_BOUNDS.minLat && 
+           lat <= DDN_BOUNDS.maxLat && 
+           lng >= DDN_BOUNDS.minLng && 
+           lng <= DDN_BOUNDS.maxLng;
+  };
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -125,8 +142,16 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
         mapInstance.current.on('click', (e: any) => {
           const { lat, lng } = e.latlng;
+          
+          if (!isLocationInDehradun(lat, lng)) {
+            setErrorMsg("This location is outside Dehradun. Please select a point within the city/university area.");
+            return;
+          }
+          
+          setErrorMsg(null);
           setCoords({ lat, lng });
           setSelectedName(""); // Clear locked name on manual click
+          setIsConfirming(true); // Ask for confirmation on manual click
           
           if (markerInstance.current) {
             markerInstance.current.setLatLng(e.latlng);
@@ -175,6 +200,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   const handleSearch = async () => {
     if (!searchQuery || !mapInstance.current) return;
+    setErrorMsg(null);
     
     // Smart Interceptor for UPES Campuses
     const lowerQuery = searchQuery.toLowerCase();
@@ -217,8 +243,16 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         const L = (window as any).L;
         const lat = parseFloat(data[0].lat);
         const lon = parseFloat(data[0].lon);
+
+        if (!isLocationInDehradun(lat, lon)) {
+          setErrorMsg("Found location is outside Dehradun. Please search for an area closer to UPES/Dehradun.");
+          setIsSearching(false);
+          return;
+        }
+
         setCoords({ lat, lng: lon });
         setSelectedName(""); // Clear locked name on new search
+        setIsConfirming(true);
         mapInstance.current.setView([lat, lon], 15);
         
         const customIcon = L.icon({
@@ -249,7 +283,16 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          
+          if (!isLocationInDehradun(latitude, longitude)) {
+            setErrorMsg("Your current location is outside Dehradun. Please manually select a point on the map.");
+            setIsLocating(false);
+            return;
+          }
+          
+          setErrorMsg(null);
           setCoords({ lat: latitude, lng: longitude });
+          setIsConfirming(true);
           mapInstance.current?.setView([latitude, longitude], 16);
           
           const customIcon = L.icon({
@@ -383,9 +426,15 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 size="sm"
                 className="h-8 text-[11px] rounded-full bg-slate-100 hover:bg-primary hover:text-white transition-all text-slate-700 font-semibold"
                 onClick={() => {
+                  if (!isLocationInDehradun(loc.lat, loc.lng)) {
+                    setErrorMsg("This preset is outside the currently allowed boundary.");
+                    return;
+                  }
+                  setErrorMsg(null);
                   setCoords({ lat: loc.lat, lng: loc.lng });
                   setSearchQuery(loc.name);
                   setSelectedName(loc.name); // Lock the name
+                  setIsConfirming(true);
                   if (mapInstance.current) {
                     mapInstance.current.setView([loc.lat, loc.lng], 15);
                     const L = (window as any).L;
@@ -441,11 +490,38 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
             </div>
           )}
 
-          {libStatus === 'ready' && !coords && (
+          {libStatus === 'ready' && !coords && !errorMsg && (
             <div className="absolute inset-x-0 top-4 z-[1000] flex justify-center pointer-events-none">
                 <span className="bg-primary/95 text-white text-[10px] px-4 py-2 rounded-full font-bold shadow-xl animate-bounce border-2 border-white/20">
                     Map is ready! Click to pick a point
                 </span>
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="absolute inset-x-0 top-4 z-[1000] flex justify-center px-4">
+                <div className="bg-red-600 text-white text-[11px] px-4 py-3 rounded-xl font-bold shadow-2xl flex items-center gap-2 border-2 border-white/20 animate-in fade-in slide-in-from-top-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    {errorMsg}
+                </div>
+            </div>
+          )}
+
+          {isConfirming && coords && (
+            <div className="absolute inset-0 z-[1001] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-6 animate-in fade-in duration-300">
+              <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full text-center space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <MapPin className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Pin this location?</h3>
+                  <p className="text-sm text-slate-500 mt-1">Please confirm if this is where you want to go. You can also drag or click the map to adjust for better precision.</p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button variant="outline" className="flex-1 h-11" onClick={() => setIsConfirming(false)}>Adjust Point</Button>
+                  <Button className="flex-1 h-11 font-bold shadow-lg" onClick={handleConfirm}>Confirm Spot</Button>
+                </div>
+              </div>
             </div>
           )}
         </div>

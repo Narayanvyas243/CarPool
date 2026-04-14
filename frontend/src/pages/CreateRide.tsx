@@ -57,9 +57,48 @@ const CreateRide = () => {
       return;
     }
 
+    // Final Location Validation
+    let finalFromCoords = fromCoords;
+    let finalToCoords = toCoords;
+
+    const geocode = async (query: string) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Dehradun")}`);
+        const data = await res.json();
+        if (data && data[0]) {
+          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        }
+      } catch (e) {
+        console.error("Geocoding failed", e);
+      }
+      return null;
+    };
+
+    const DDN_BOUNDS = { minLat: 30.15, maxLat: 30.55, minLng: 77.75, maxLng: 78.30 };
+    const isInDdn = (c: {lat: number, lng: number} | null) => 
+      c && c.lat >= DDN_BOUNDS.minLat && c.lat <= DDN_BOUNDS.maxLat && 
+      c.lng >= DDN_BOUNDS.minLng && c.lng <= DDN_BOUNDS.maxLng;
+
     setIsLoading(true);
 
     try {
+      if (!finalFromCoords) {
+        finalFromCoords = await geocode(source);
+      }
+      if (!finalToCoords) {
+        finalToCoords = await geocode(destination);
+      }
+
+      if (!isInDdn(finalFromCoords) || !isInDdn(finalToCoords)) {
+        toast({
+          title: "Location Restricted",
+          description: "Both pickup and drop-off must be within the Dehradun/UPES region. Please use the map picker for precision.",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const dateTimeString = new Date(`${date}T${time}`).toISOString();
 
       const res = await fetch(getApiUrl('/api/rides/create'), {
@@ -68,8 +107,8 @@ const CreateRide = () => {
         body: JSON.stringify({
           fromLocation: source,
           toLocation: destination,
-          fromCoords: fromCoords,
-          toCoords: toCoords,
+          fromCoords: finalFromCoords,
+          toCoords: finalToCoords,
           time: dateTimeString,
           seatsAvailable: parseInt(seats, 10),
           totalSeats: parseInt(seats, 10),

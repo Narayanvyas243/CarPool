@@ -25,7 +25,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
       // Geocoding Fallback if coords are missing
       if (fromLat === null || fromLat === undefined || fromLng === null || fromLng === undefined) {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(from.name)}`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(from.name + ", Dehradun")}`);
           const data = await res.json();
           if (data[0]) {
             fromLat = parseFloat(data[0].lat);
@@ -38,7 +38,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
 
       if (toLat === null || toLat === undefined || toLng === null || toLng === undefined) {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(to.name)}`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(to.name + ", Dehradun")}`);
           const data = await res.json();
           if (data[0]) {
             toLat = parseFloat(data[0].lat);
