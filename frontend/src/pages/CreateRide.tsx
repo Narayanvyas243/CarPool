@@ -12,6 +12,7 @@ import {
   IndianRupee,
   Car,
   QrCode,
+  Check,
   ArrowLeft,
   Info
 } from "lucide-react";
@@ -57,22 +58,15 @@ const CreateRide = () => {
       return;
     }
 
-    // Final Location Validation
-    let finalFromCoords = fromCoords;
-    let finalToCoords = toCoords;
-
-    const geocode = async (query: string) => {
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Dehradun")}`);
-        const data = await res.json();
-        if (data && data[0]) {
-          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        }
-      } catch (e) {
-        console.error("Geocoding failed", e);
-      }
-      return null;
-    };
+    // Force strict coordinate selection
+    if (!fromCoords || !toCoords) {
+      toast({
+        title: "Exact Location Required",
+        description: "Please select both locations from the map or search results to ensure accuracy.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const DDN_BOUNDS = { minLat: 30.15, maxLat: 30.55, minLng: 77.75, maxLng: 78.30 };
     const isInDdn = (c: {lat: number, lng: number} | null) => 
@@ -82,14 +76,7 @@ const CreateRide = () => {
     setIsLoading(true);
 
     try {
-      if (!finalFromCoords) {
-        finalFromCoords = await geocode(source);
-      }
-      if (!finalToCoords) {
-        finalToCoords = await geocode(destination);
-      }
-
-      if (!isInDdn(finalFromCoords) || !isInDdn(finalToCoords)) {
+      if (!isInDdn(fromCoords) || !isInDdn(toCoords)) {
         toast({
           title: "Location Restricted",
           description: "Both pickup and drop-off must be within the Dehradun/UPES region. Please use the map picker for precision.",
@@ -107,8 +94,8 @@ const CreateRide = () => {
         body: JSON.stringify({
           fromLocation: source,
           toLocation: destination,
-          fromCoords: finalFromCoords,
-          toCoords: finalToCoords,
+          fromCoords,
+          toCoords,
           time: dateTimeString,
           seatsAvailable: parseInt(seats, 10),
           totalSeats: parseInt(seats, 10),
@@ -135,6 +122,8 @@ const CreateRide = () => {
       setIsLoading(false);
     }
   };
+
+  const isFormReady = source && destination && fromCoords && toCoords && date && time && seats && price;
 
   return (
     <Layout userName={user?.name || "Student"} showNav={false}>
@@ -165,11 +154,27 @@ const CreateRide = () => {
             <form onSubmit={handleCreateRide} className="space-y-5">
               {/* Route */}
               <div className="space-y-4">
-                <label className="text-sm font-medium text-foreground">Route</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Route</label>
+                  {!fromCoords || !toCoords ? (
+                    <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                      <MapPin className="h-3 w-3" /> Pin Locations on Map
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Check className="h-3 w-3" /> All Locations Verified
+                    </span>
+                  )}
+                </div>
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground ml-1">Pickup</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground ml-1">Pickup</span>
+                      {fromCoords && (
+                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-100/50 px-1.5 py-0.5 rounded">Pin Verified</span>
+                      )}
+                    </div>
                     <MapPicker 
                       title="Select Pickup Location" 
                       onLocationSelect={(loc) => {
@@ -191,7 +196,12 @@ const CreateRide = () => {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground ml-1">Drop-off</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground ml-1">Drop-off</span>
+                      {toCoords && (
+                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-100/50 px-1.5 py-0.5 rounded">Pin Verified</span>
+                      )}
+                    </div>
                     <MapPicker 
                       title="Select Drop-off Location" 
                       onLocationSelect={(loc) => {
@@ -211,6 +221,10 @@ const CreateRide = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Date & Time */}
+              {/* Rest of the form remains the same */}
+              {/* ... mapping to existing lines ... */}
 
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
@@ -294,9 +308,9 @@ const CreateRide = () => {
 
               <Button 
                 type="submit" 
-                className="w-full h-12" 
+                className="w-full h-12 mt-4" 
                 size="lg"
-                disabled={isLoading}
+                disabled={isLoading || !isFormReady}
               >
                 {isLoading ? (
                   <span className="animate-pulse">Creating ride...</span>

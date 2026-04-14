@@ -49,20 +49,53 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
       let toLat = to.lat;
       let toLng = to.lng;
 
+      // Dictionary of common UPES/Dehradun keywords for fallback
+      const COMMON_LOCATIONS: Record<string, { lat: number; lng: number }> = {
+        'bidholi': { lat: 30.398, lng: 77.969 },
+        'kandoli': { lat: 30.412, lng: 77.962 },
+        'prem nagar': { lat: 30.339, lng: 77.966 },
+        'isbt': { lat: 30.286, lng: 77.996 },
+        'clock tower': { lat: 30.324, lng: 78.041 },
+        'ballupur': { lat: 30.334, lng: 78.016 },
+        'jakhan': { lat: 30.358, lng: 78.062 },
+        'rajpur road': { lat: 30.335, lng: 78.058 },
+        'ddn': { lat: 30.316, lng: 78.032 }
+      };
+
+      const findInDictionary = (name: string) => {
+        const lower = name.toLowerCase();
+        for (const [key, coords] of Object.entries(COMMON_LOCATIONS)) {
+          if (lower.includes(key)) return coords;
+        }
+        return null;
+      };
+
       // Geocoding Fallbacks
       if (fromLat == null || fromLng == null) {
-        const coords = await geocode(from.name);
-        if (coords) {
-          fromLat = coords.lat;
-          fromLng = coords.lng;
+        const dictMatch = findInDictionary(from.name);
+        if (dictMatch) {
+          fromLat = dictMatch.lat;
+          fromLng = dictMatch.lng;
+        } else {
+          const coords = await geocode(from.name);
+          if (coords) {
+            fromLat = coords.lat;
+            fromLng = coords.lng;
+          }
         }
       }
 
       if (toLat == null || toLng == null) {
-        const coords = await geocode(to.name);
-        if (coords) {
-          toLat = coords.lat;
-          toLng = coords.lng;
+        const dictMatch = findInDictionary(to.name);
+        if (dictMatch) {
+          toLat = dictMatch.lat;
+          toLng = dictMatch.lng;
+        } else {
+          const coords = await geocode(to.name);
+          if (coords) {
+            toLat = coords.lat;
+            toLng = coords.lng;
+          }
         }
       }
 

@@ -508,18 +508,35 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           )}
 
           {isConfirming && coords && (
-            <div className="absolute inset-0 z-[1001] bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-6 animate-in fade-in duration-300">
-              <div className="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full text-center space-y-4 animate-in zoom-in-95 duration-200">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <MapPin className="h-8 w-8 text-primary" />
+            <div className="absolute inset-0 z-[1001] bg-slate-900/60 backdrop-blur-[3px] flex items-center justify-center p-6 animate-in fade-in duration-300">
+              <div className="bg-white rounded-[32px] p-8 shadow-2xl max-w-sm w-full text-center space-y-6 animate-in zoom-in-95 duration-200 border border-slate-100">
+                <div className="relative mx-auto w-20 h-20">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                  <div className="relative w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
+                    <MapPin className="h-10 w-10 text-white" />
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Pin this location?</h3>
-                  <p className="text-sm text-slate-500 mt-1">Please confirm if this is where you want to go. You can also drag or click the map to adjust for better precision.</p>
+                
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Precision Location</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                    We've captured your exact coordinates within the Dehradun region. This helps drivers find you precisely.
+                  </p>
                 </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-primary">
+                    FIX
+                  </div>
+                  <div className="text-left overflow-hidden">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Coordinates</p>
+                    <p className="text-xs font-mono font-bold text-slate-700 truncate">{coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</p>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="flex-1 h-11" onClick={() => setIsConfirming(false)}>Adjust Point</Button>
-                  <Button className="flex-1 h-11 font-bold shadow-lg" onClick={handleConfirm}>Confirm Spot</Button>
+                  <Button variant="outline" className="flex-1 h-12 rounded-2xl border-slate-200 font-bold text-slate-600" onClick={() => setIsConfirming(false)}>Adjust</Button>
+                  <Button className="flex-1 h-12 rounded-2xl font-bold shadow-xl shadow-primary/40 bg-primary hover:bg-primary/90 transition-all active:scale-95" onClick={handleConfirm}>Confirm Spot</Button>
                 </div>
               </div>
             </div>
