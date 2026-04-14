@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Layers, MapPin, Navigation, Info, AlertTriangle, Loader2 } from "lucide-react";
 
 interface RideMapProps {
   from: { lat: number | null | undefined; lng: number | null | undefined; name: string };
@@ -9,63 +10,90 @@ interface RideMapProps {
 const RideMap = ({ from, to, markers }: RideMapProps) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
   const liveMarkersRef = useRef<Map<string, any>>(new Map());
   const routeLayerRef = useRef<any>(null);
+  
+  const [mapType, setMapType] = useState<'voyager' | 'satellite'>('voyager');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Helper for geocoding
+  const geocode = async (name: string) => {
+    try {
+      // Priority 1: Dehradun bias
+      let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ", Dehradun")}`);
+      let data = await res.json();
+      if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+
+      // Priority 2: Generic search
+      res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}`);
+      data = await res.json();
+      if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    } catch (e) {
+      console.error("Geocoding failed for", name, e);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const L = (window as any).L;
     if (!mapContainerRef.current || !L) return;
 
     const initMap = async () => {
+      setIsLoading(true);
+      setError(null);
+
       let fromLat = from.lat;
       let fromLng = from.lng;
       let toLat = to.lat;
       let toLng = to.lng;
 
-      // Geocoding Fallback if coords are missing
-      if (fromLat === null || fromLat === undefined || fromLng === null || fromLng === undefined) {
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(from.name + ", Dehradun")}`);
-          const data = await res.json();
-          if (data[0]) {
-            fromLat = parseFloat(data[0].lat);
-            fromLng = parseFloat(data[0].lon);
-          }
-        } catch (e) {
-          console.error("Geocoding fallback failed for 'from'", e);
+      // Geocoding Fallbacks
+      if (fromLat == null || fromLng == null) {
+        const coords = await geocode(from.name);
+        if (coords) {
+          fromLat = coords.lat;
+          fromLng = coords.lng;
         }
       }
 
-      if (toLat === null || toLat === undefined || toLng === null || toLng === undefined) {
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(to.name + ", Dehradun")}`);
-          const data = await res.json();
-          if (data[0]) {
-            toLat = parseFloat(data[0].lat);
-            toLng = parseFloat(data[0].lon);
-          }
-        } catch (e) {
-          console.error("Geocoding fallback failed for 'to'", e);
+      if (toLat == null || toLng == null) {
+        const coords = await geocode(to.name);
+        if (coords) {
+          toLat = coords.lat;
+          toLng = coords.lng;
         }
       }
 
-      if (fromLat === null || fromLat === undefined || fromLng === null || fromLng === undefined || 
-          toLat === null || toLat === undefined || toLng === null || toLng === undefined) return;
+      if (fromLat == null || fromLng == null || toLat == null || toLng == null) {
+        setError("Map coordinates could not be found for these locations.");
+        setIsLoading(false);
+        return;
+      }
+
+      const fromPos: [number, number] = [fromLat, fromLng];
+      const toPos: [number, number] = [toLat, toLng];
 
       if (!mapInstance.current) {
-        const fromPos: [number, number] = [fromLat, fromLng];
-        const toPos: [number, number] = [toLat, toLng];
-
-        // Create map
+        // Initialize Map
         mapInstance.current = L.map(mapContainerRef.current, {
-          zoomControl: true,
+          zoomControl: false,
           attributionControl: false,
           scrollWheelZoom: false
         }).setView(fromPos, 13);
 
-        // Add Tile Layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapInstance.current);
+        // Add Zoom Control at custom position
+        L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
+        // Tile Layer
+        const layerUrl = mapType === 'satellite' 
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+        tileLayerRef.current = L.tileLayer(layerUrl, { maxZoom: 19 }).addTo(mapInstance.current);
+
+        // Markers
         const customIcon = L.icon({
           iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
           shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -73,16 +101,17 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
           iconAnchor: [12, 41]
         });
 
-        L.marker(fromPos, { icon: customIcon }).addTo(mapInstance.current).bindPopup(`Pickup: ${from.name}`);
         const dropIcon = L.icon({
           iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
           shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
           iconSize: [25, 41],
           iconAnchor: [12, 41]
         });
-        L.marker(toPos, { icon: dropIcon }).addTo(mapInstance.current).bindPopup(`Drop-off: ${to.name}`);
 
-        // Fetch Road Route from OSRM
+        L.marker(fromPos, { icon: customIcon }).addTo(mapInstance.current).bindPopup(`<b>Pickup:</b><br/>${from.name}`);
+        L.marker(toPos, { icon: dropIcon }).addTo(mapInstance.current).bindPopup(`<b>Drop-off:</b><br/>${to.name}`);
+
+        // Route Fetching (OSRM)
         const fetchRoute = async () => {
           try {
             const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
@@ -90,45 +119,46 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
             
             if (data.routes && data.routes.length > 0) {
               const coordinates = data.routes[0].geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
-              
               if (routeLayerRef.current) mapInstance.current.removeLayer(routeLayerRef.current);
               
               routeLayerRef.current = L.polyline(coordinates, {
-                color: 'hsl(var(--primary))',
-                weight: 5,
+                color: '#3b82f6',
+                weight: 6,
                 opacity: 0.8,
                 lineJoin: 'round'
               }).addTo(mapInstance.current);
 
-              // Fit bounds to the actual route
               mapInstance.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
             } else {
-              drawStraightLine(fromPos, toPos);
+              drawStraightLine();
             }
           } catch (err) {
-            console.error("OSRM Route error:", err);
-            drawStraightLine(fromPos, toPos);
+            console.error("OSRM error:", err);
+            drawStraightLine();
+          } finally {
+            setIsLoading(false);
           }
         };
 
-        const drawStraightLine = (p1: [number, number], p2: [number, number]) => {
+        const drawStraightLine = () => {
           if (routeLayerRef.current) mapInstance.current.removeLayer(routeLayerRef.current);
-          routeLayerRef.current = L.polyline([p1, p2], {
-            color: 'hsl(var(--primary))',
+          routeLayerRef.current = L.polyline([fromPos, toPos], {
+            color: '#3b82f6',
             weight: 4,
             opacity: 0.6,
             dashArray: '10, 10'
           }).addTo(mapInstance.current);
-          const bounds = L.latLngBounds([p1, p2]);
-          mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
+          mapInstance.current.fitBounds(L.latLngBounds([fromPos, toPos]), { padding: [50, 50] });
         };
 
         fetchRoute();
-
-        setTimeout(() => {
-          if (mapInstance.current) mapInstance.current.invalidateSize();
-        }, 300);
+      } else {
+        setIsLoading(false);
       }
+
+      setTimeout(() => {
+        if (mapInstance.current) mapInstance.current.invalidateSize();
+      }, 500);
     };
 
     initMap();
@@ -138,16 +168,28 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         mapInstance.current.remove();
         mapInstance.current = null;
         routeLayerRef.current = null;
+        tileLayerRef.current = null;
       }
     };
   }, [from.lat, from.lng, to.lat, to.lng, from.name, to.name]);
+
+  // Handle layer switching
+  useEffect(() => {
+    if (mapInstance.current && (window as any).L && tileLayerRef.current) {
+      const L = (window as any).L;
+      mapInstance.current.removeLayer(tileLayerRef.current);
+      const layerUrl = mapType === 'satellite' 
+        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      tileLayerRef.current = L.tileLayer(layerUrl, { maxZoom: 19 }).addTo(mapInstance.current);
+    }
+  }, [mapType]);
 
   // Handle dynamic markers (Live Tracking)
   useEffect(() => {
     if (!mapInstance.current || !markers || !(window as any).L) return;
     const L = (window as any).L;
 
-    // Clear old markers that aren't in the new list
     const currentLabels = new Set(markers.map(m => m.label));
     liveMarkersRef.current.forEach((marker, label) => {
         if (!currentLabels.has(label)) {
@@ -156,65 +198,106 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         }
     });
 
-    // Update or add markers
     markers.forEach(m => {
         const existing = liveMarkersRef.current.get(m.label);
         if (existing) {
             existing.setLatLng([m.lat, m.lng]);
         } else {
             const circleMarker = L.circleMarker([m.lat, m.lng], {
-                radius: 8,
+                radius: 10,
                 fillColor: m.color === 'blue' ? '#3b82f6' : '#ef4444',
                 color: '#fff',
-                weight: 2,
+                weight: 3,
                 opacity: 1,
-                fillOpacity: 0.9
+                fillOpacity: 1
             }).addTo(mapInstance.current).bindPopup(m.label);
             liveMarkersRef.current.set(m.label, circleMarker);
         }
     });
 
-    // Adjust bounds if live markers are outside
-    if (markers.length > 0) {
+    if (markers.length > 0 && !isLoading) {
         const markerPoints = markers.map(m => [m.lat, m.lng]);
         const allPoints = [...markerPoints];
+        if (from.lat && from.lng) allPoints.push([from.lat, from.lng]);
+        if (to.lat && to.lng) allPoints.push([to.lat, to.lng]);
         
-        if (from.lat !== null && from.lat !== undefined && from.lng !== null && from.lng !== undefined) {
-          allPoints.push([from.lat, from.lng]);
-        }
-        if (to.lat !== null && to.lat !== undefined && to.lng !== null && to.lng !== undefined) {
-          allPoints.push([to.lat, to.lng]);
-        }
-        
-        if (allPoints.length > 0) {
-          mapInstance.current.fitBounds(L.latLngBounds(allPoints as [number, number][]), { padding: [40, 40] });
-        }
+        mapInstance.current.fitBounds(L.latLngBounds(allPoints as [number, number][]), { padding: [50, 50] });
     }
-  }, [markers, from, to]);
+  }, [markers, isLoading]);
 
-  if (!from.name || !to.name) {
-    return (
-      <div className="w-full h-32 flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-sm font-medium">
-        Route visualization not ready yet
-      </div>
-    );
-  }
+  if (!from.name || !to.name) return null;
 
   return (
-    <div className="w-full h-[350px] rounded-2xl overflow-hidden border border-slate-200 shadow-md relative z-0 bg-slate-100">
-      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
+    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-slate-200 shadow-xl relative z-0 bg-slate-50 group">
+      <div ref={mapContainerRef} className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`} />
       
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl text-[10px] space-y-1.5 max-w-[180px]">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-sm" />
-          <span className="font-bold text-slate-700 truncate">{from.name}</span>
+      {/* Overlay States */}
+      {isLoading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-sm z-10 space-y-4">
+          <div className="relative">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <Navigation className="h-5 w-5 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <p className="text-xs font-bold text-slate-500 tracking-wider uppercase">Loading Route Details...</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm" />
-          <span className="font-bold text-slate-700 truncate">{to.name}</span>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50/95 backdrop-blur-sm z-20 p-8 text-center space-y-4">
+          <div className="p-4 bg-red-100 rounded-full">
+            <AlertTriangle className="h-8 w-8 text-red-600" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-red-900">{error}</p>
+            <p className="text-[10px] text-red-700 font-medium">Please try re-creating the ride using the map picker for exact coordinates.</p>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Floating Controls */}
+      {!isLoading && !error && (
+        <>
+          {/* Layer Toggle */}
+          <button 
+            onClick={() => setMapType(mapType === 'voyager' ? 'satellite' : 'voyager')}
+            className="absolute top-4 right-4 z-[1000] bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-100 shadow-2xl flex items-center gap-2 hover:bg-white transition-all transform active:scale-95 group/btn"
+          >
+            <Layers className={`h-4 w-4 ${mapType === 'satellite' ? 'text-primary' : 'text-slate-500'}`} />
+            <span className="text-[11px] font-bold text-slate-800">
+              {mapType === 'voyager' ? 'Satellite View' : 'Map View'}
+            </span>
+          </button>
+
+          {/* Quick Info */}
+          <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-md p-2 rounded-2xl border border-slate-100 shadow-2xl flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Info className="h-4 w-4 text-primary" />
+            </div>
+            <div className="pr-2">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Active Route</p>
+              <p className="text-[10px] font-bold text-slate-900">Dehradun Region</p>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-md p-4 rounded-3xl border border-slate-100 shadow-2xl space-y-3 min-w-[200px] animate-in slide-in-from-left-4 duration-500">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-800 truncate">{from.name}</p>
+                <p className="text-[9px] text-slate-400 font-medium">Pickup Point</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-800 truncate">{to.name}</p>
+                <p className="text-[9px] text-slate-400 font-medium">Drop-off Point</p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

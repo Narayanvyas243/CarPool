@@ -40,10 +40,7 @@ export const useLiveTracking = (rideId: string, userId: string, role: 'driver' |
 
   // Handle Geolocation
   useEffect(() => {
-    if (!active || !rideId || !socket) return;
-
     let watchId: number;
-
     const startTracking = () => {
       if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(
@@ -52,11 +49,13 @@ export const useLiveTracking = (rideId: string, userId: string, role: 'driver' |
             const newLoc = { lat, lng };
             setMyLocation(newLoc);
             
-            // Send to socket
-            socket.emit("location-update", { rideId, lat, lng, role });
+            // Send to socket only if active
+            if (active && socket && rideId) {
+              socket.emit("location-update", { rideId, lat, lng, role });
+            }
           },
           (error) => console.error("Geolocation error:", error),
-          { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+          { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
         );
       }
     };
@@ -66,7 +65,7 @@ export const useLiveTracking = (rideId: string, userId: string, role: 'driver' |
     return () => {
       if (watchId) navigator.geolocation.clearWatch(watchId);
     };
-  }, [active, rideId, socket, role]);
+  }, [active, rideId, socket, role]); // Keep active in dependency to trigger socket updates when state changes
 
   // Listen for other user's location
   useEffect(() => {
