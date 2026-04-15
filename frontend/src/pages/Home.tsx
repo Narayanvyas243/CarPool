@@ -22,6 +22,7 @@ import {
   Users, 
   BadgeCheck 
 } from "lucide-react";
+import RideCard, { RideData } from "@/components/RideCard";
 
 
 const Home = () => {
