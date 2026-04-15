@@ -3,8 +3,6 @@ import Layout from "@/components/Layout";
 import SearchBar from "@/components/SearchBar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import RideCard, { RideData } from "@/components/RideCard";
-import { MapPin, Clock, Users, User, BadgeCheck, ChevronRight, Car } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,6 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl } from "../apiConfig";
+import { 
+  Car, 
+  Clock, 
+  MapPin, 
+  Users, 
+  ChevronRight, 
+  BadgeCheck 
+} from "lucide-react";
 
 
 const Home = () => {
@@ -77,46 +83,30 @@ const Home = () => {
       <div className="container px-4 py-6 space-y-6">
         {/* Quick Stats */}
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
+        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
           <Card 
-            className="premium-card bg-primary/10 border-primary/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95"
+            className="premium-card bg-primary/10 border-primary/20 rounded-[2.5rem] p-6 group flex flex-col items-center text-center transition-transform active:scale-95"
             onClick={() => {
               const element = document.getElementById('available-rides');
               if (element) element.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            <div className="p-2.5 rounded-2xl bg-primary/20 mb-3 group-hover:scale-110 transition-transform">
-              <Car className="h-6 w-6 text-primary" />
+            <div className="p-3 rounded-2xl bg-primary/20 mb-4 group-hover:scale-110 transition-transform">
+              <Car className="h-7 w-7 text-primary" />
             </div>
-            <p className="text-3xl font-black text-primary tracking-tighter">{stats.activeRides}+</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">Active Rides</p>
+            <p className="text-4xl font-black text-primary tracking-tighter">{stats.activeRides}+</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-2">Active Rides</p>
           </Card>
           
           <Card 
-            className="premium-card bg-accent/10 border-accent/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95"
+            className="premium-card bg-accent/10 border-accent/20 rounded-[2.5rem] p-6 group flex flex-col items-center text-center transition-transform active:scale-95"
             onClick={() => navigate("/profile")}
           >
-            <div className="p-2.5 rounded-2xl bg-accent/20 mb-3 group-hover:scale-110 transition-transform">
-              <Clock className="h-6 w-6 text-accent" />
+            <div className="p-3 rounded-2xl bg-accent/20 mb-4 group-hover:scale-110 transition-transform">
+              <Clock className="h-7 w-7 text-accent" />
             </div>
-            <p className="text-3xl font-black text-accent tracking-tighter">{stats.ridesTaken}</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">My Journeys</p>
-          </Card>
-
-          <Card className="premium-card bg-success/10 border-success/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95 hidden lg:flex">
-            <div className="p-2.5 rounded-2xl bg-success/20 mb-3 group-hover:scale-110 transition-transform">
-              <MapPin className="h-6 w-6 text-success" />
-            </div>
-            <p className="text-3xl font-black text-success tracking-tighter">15+</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">Campus Routes</p>
-          </Card>
-
-          <Card className="premium-card bg-warning/10 border-warning/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95 hidden lg:flex">
-            <div className="p-2.5 rounded-2xl bg-warning/20 mb-3 group-hover:scale-110 transition-transform">
-              <Users className="h-6 w-6 text-warning" />
-            </div>
-            <p className="text-3xl font-black text-warning tracking-tighter">1.2k</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">Verified Users</p>
+            <p className="text-4xl font-black text-accent tracking-tighter">{stats.ridesTaken}</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-2">My Journeys</p>
           </Card>
         </div>
 
@@ -139,7 +129,7 @@ const Home = () => {
             </Button>
           </div>
   
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rides.map((ride, index) => (
               <div 
                 key={ride.id} 

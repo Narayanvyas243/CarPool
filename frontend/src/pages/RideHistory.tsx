@@ -8,6 +8,7 @@ import {
   Car, 
   Calendar, 
   ChevronLeft,
+  ChevronRight,
   Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ const RideHistory = () => {
         </div>
 
         {/* History List */}
-        <div className="px-4 space-y-4">
+        <div className="px-4 space-y-5">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (

@@ -311,12 +311,11 @@ const Profile = () => {
                   navigate(`/ride/${ride._id}`);
                 }}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-xs text-foreground truncate max-w-[120px]">{ride.fromLocation} → {ride.toLocation}</span>
-                        <span className={`text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest ${
                           ride.type === 'Booked' ? 'bg-success/10 text-success' :
                           ride.type === 'Offered' ? 'bg-primary/10 text-primary' :
                           ride.type === 'Taken' ? 'bg-accent/10 text-accent' :
@@ -324,20 +323,40 @@ const Profile = () => {
                         }`}>
                           {ride.type}
                         </span>
+                        <span className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
+                          <History className="h-2.5 w-2.5" />
+                          {new Date(ride.time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-bold">
-                        <History className="h-2.5 w-2.5" />
-                        {new Date(ride.time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      <h3 className="font-bold text-sm text-foreground truncate tracking-tight">
+                        {ride.fromLocation} → {ride.toLocation}
+                      </h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-black text-primary tracking-tighter">₹{ride.price || 50}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t border-border/40 mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-md bg-primary/10">
+                        <Users className="h-3 w-3 text-primary" />
+                      </div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
+                        Ride ID: {ride._id?.slice(-4).toUpperCase()}
                       </span>
                     </div>
                     {ride.type === 'Offered' && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                        onClick={() => handleCancelRide(ride._id)}
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-xl"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelRide(ride._id);
+                        }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
