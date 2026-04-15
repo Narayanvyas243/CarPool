@@ -101,7 +101,7 @@ const Search = () => {
             </div>
 
             <TabsContent value="list" className="animate-in fade-in slide-in-from-bottom-4 duration-500 m-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 {rides.map(ride => (
                   <RideCard key={ride.id} ride={ride} onJoinRide={handleJoinRide} />
                 ))}

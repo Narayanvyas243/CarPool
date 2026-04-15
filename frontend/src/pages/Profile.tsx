@@ -164,6 +164,8 @@ const Profile = () => {
                 <span className="text-[10px] font-bold text-warning uppercase">5.0 Rating</span>
               </div>
             </div>
+            {/* Deployment Verification Anchor */}
+            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.1</p>
           </div>
         </div>
 
@@ -280,11 +282,13 @@ const Profile = () => {
             </div>
           </div>
         )}
-
         {/* Ride History Quick View */}
-        <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.18s" }} id="recent-rides">
-          <h2 className="text-lg font-bold mb-3 px-1">Recent Rides</h2>
-          <div className="space-y-3">
+        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both" id="recent-rides">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Recent Rides</h2>
+            <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase text-primary" onClick={() => navigate("/history")}>View All</Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               ...dashboardData.bookedRides.map(r => ({ 
                 ...r, 
@@ -296,98 +300,60 @@ const Profile = () => {
               }))
             ]
               .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-              .slice(0, 5)
+              .slice(0, 4)
               .map((ride: any, i) => (
               <Card 
                 key={ride._id || i} 
-                className="border-0 shadow-soft cursor-pointer hover:border-primary transition-colors border-l-4 border-l-transparent hover:border-l-primary"
+                className="premium-card rounded-2xl overflow-hidden hover:border-primary/30 cursor-pointer active:scale-[0.98] transition-all bg-white/40 backdrop-blur-sm border-white/40"
                 onClick={(e) => {
-                  // Don't navigate if clicking the cancel button
                   if ((e.target as HTMLElement).closest('button')) return;
                   navigate(`/ride/${ride._id}`);
                 }}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm text-foreground">{ride.fromLocation} → {ride.toLocation}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        <span className="font-bold text-xs text-foreground truncate max-w-[120px]">{ride.fromLocation} → {ride.toLocation}</span>
+                        <span className={`text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
                           ride.type === 'Booked' ? 'bg-success/10 text-success' :
                           ride.type === 'Offered' ? 'bg-primary/10 text-primary' :
                           ride.type === 'Taken' ? 'bg-accent/10 text-accent' :
-                          'bg-muted text-muted-foreground' // Completed
+                          'bg-muted text-muted-foreground'
                         }`}>
                           {ride.type}
                         </span>
                       </div>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <History className="h-3 w-3" />
-                        {new Date(ride.time).toLocaleDateString()} at {new Date(ride.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-bold">
+                        <History className="h-2.5 w-2.5" />
+                        {new Date(ride.time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {ride.type === 'Offered' && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleCancelRide(ride._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <BadgeCheck className="h-5 w-5 text-success" />
-                    </div>
+                    {ride.type === 'Offered' && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleCancelRide(ride._id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
-
-                  {/* Show passengers if it's an offered ride with accepted requests */}
-                  {ride.type === 'Offered' && ride.requests && ride.requests.some((r: any) => r.status === 'accepted') && (
-                    <div className="mt-3 pt-3 border-t border-border space-y-2">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                        <Users className="h-3 w-3" /> Accepted Passengers
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {ride.requests.filter((r: any) => r.status === 'accepted').map((req: any, idx: number) => (
-                          <div key={idx} className="flex items-center gap-2 bg-secondary/30 px-2 py-1 rounded-md group">
-                            <span className="text-xs font-medium">{req.requester?.name}</span>
-                            {req.requester?.phone && (
-                              <div className="flex items-center gap-1">
-                                <a href={`tel:${req.requester.phone}`} className="text-primary hover:text-primary/80">
-                                  <Phone className="h-3 w-3" />
-                                </a>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigator.clipboard.writeText(req.requester.phone);
-                                    toast({ title: "Copied", description: "Phone number copied!" });
-                                  }}
-                                >
-                                  <Copy className="h-2.5 w-2.5" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             ))}
             {dashboardData.bookedRides.length === 0 && dashboardData.createdRides.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-lg animate-fade-in">You have not traveled</p>
+              <p className="text-[10px] font-black text-muted-foreground text-center py-8 bg-black/5 dark:bg-white/5 rounded-3xl uppercase tracking-widest col-span-full">No active history</p>
             )}
           </div>
         </div>
+v>
 
         {/* Menu Grid - Action Tiles */}
         <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400 fill-mode-both">
           <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {menuItems.map((item, index) => (
               <button
                 key={item.label}
@@ -398,15 +364,15 @@ const Profile = () => {
                     toast({ title: "Coming soon!", description: `${item.label} feature is under development` });
                   }
                 }}
-                className="premium-card p-5 rounded-3xl flex flex-col items-start gap-4 text-left group transition-all active:scale-[0.98] bg-card/40 backdrop-blur-sm border-border/40"
+                className="premium-card p-4 sm:p-5 rounded-3xl flex flex-col items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left group transition-all active:scale-[0.98] bg-card/40 backdrop-blur-sm border-border/40 h-full"
               >
-                <div className={`p-3 rounded-2xl transition-colors group-hover:bg-primary/20 ${index % 2 === 0 ? 'bg-primary/10' : 'bg-accent/10'}`}>
-                  <item.icon className={`h-6 w-6 ${index % 2 === 0 ? 'text-primary' : 'text-accent'}`} />
+                <div className={`p-2.5 sm:p-3 rounded-2xl transition-colors group-hover:bg-primary/20 ${index % 2 === 0 ? 'bg-primary/10' : 'bg-accent/10'}`}>
+                  <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${index % 2 === 0 ? 'text-primary' : 'text-accent'}`} />
                 </div>
-                <div className="space-y-1">
-                  <p className="font-black text-sm text-foreground leading-tight">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 group-hover:text-primary transition-colors">
-                    View more <ChevronRight className="h-2.5 w-2.5" />
+                <div className="space-y-1 w-full">
+                  <p className="font-black text-[11px] sm:text-xs text-foreground leading-tight uppercase tracking-wider">{item.label}</p>
+                  <p className="hidden sm:flex text-[10px] text-muted-foreground font-medium items-center gap-1 group-hover:text-primary transition-colors">
+                    Go <ChevronRight className="h-2.5 w-2.5" />
                   </p>
                 </div>
               </button>

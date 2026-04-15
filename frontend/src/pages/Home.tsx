@@ -75,35 +75,48 @@ const Home = () => {
     <Layout userName={user?.name || "Guest"}>
       <div className="container px-4 py-6 space-y-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
-          <div 
-            className="premium-card rounded-3xl p-6 shadow-soft text-center cursor-pointer group flex flex-col items-center justify-center bg-gradient-to-br from-card to-secondary/30"
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
+          <Card 
+            className="premium-card bg-primary/10 border-primary/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95"
             onClick={() => {
               const element = document.getElementById('available-rides');
               if (element) element.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-primary/20">
-              <Car className="h-7 w-7 text-primary" />
+            <div className="p-2.5 rounded-2xl bg-primary/20 mb-3 group-hover:scale-110 transition-transform">
+              <Car className="h-6 w-6 text-primary" />
             </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-black text-foreground tracking-tighter">{stats.activeRides}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Rides</p>
-            </div>
-          </div>
+            <p className="text-3xl font-black text-primary tracking-tighter">{stats.activeRides}+</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">Active Rides</p>
+          </Card>
           
-          <div 
-            className="premium-card rounded-3xl p-6 shadow-soft text-center cursor-pointer group flex flex-col items-center justify-center bg-gradient-to-br from-card to-secondary/30"
+          <Card 
+            className="premium-card bg-accent/10 border-accent/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95"
             onClick={() => navigate("/profile")}
           >
-            <div className="w-14 h-14 rounded-2xl bg-accent/10 mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-accent/20">
-              <Clock className="h-7 w-7 text-accent" />
+            <div className="p-2.5 rounded-2xl bg-accent/20 mb-3 group-hover:scale-110 transition-transform">
+              <Clock className="h-6 w-6 text-accent" />
             </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-black text-foreground tracking-tighter">{stats.ridesTaken}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rides Taken</p>
+            <p className="text-3xl font-black text-accent tracking-tighter">{stats.ridesTaken}</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">My Journeys</p>
+          </Card>
+
+          <Card className="premium-card bg-success/10 border-success/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95 hidden lg:flex">
+            <div className="p-2.5 rounded-2xl bg-success/20 mb-3 group-hover:scale-110 transition-transform">
+              <MapPin className="h-6 w-6 text-success" />
             </div>
-          </div>
+            <p className="text-3xl font-black text-success tracking-tighter">15+</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">Campus Routes</p>
+          </Card>
+
+          <Card className="premium-card bg-warning/10 border-warning/20 rounded-[2rem] p-5 group flex flex-col items-center sm:items-start text-center sm:text-left transition-transform active:scale-95 hidden lg:flex">
+            <div className="p-2.5 rounded-2xl bg-warning/20 mb-3 group-hover:scale-110 transition-transform">
+              <Users className="h-6 w-6 text-warning" />
+            </div>
+            <p className="text-3xl font-black text-warning tracking-tighter">1.2k</p>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-1">Verified Users</p>
+          </Card>
         </div>
 
         {/* Search */}
@@ -112,45 +125,45 @@ const Home = () => {
         </div>
 
         {/* Available Rides */}
-        <div className="space-y-6" id="available-rides">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both" id="available-rides">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-xl font-bold text-foreground tracking-tight">Available Rides</h2>
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Nearby Rides</h2>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-primary font-bold hover:bg-primary/10 rounded-full px-4"
+              className="text-primary font-black uppercase text-[10px] hover:bg-primary/10 rounded-full px-4"
               onClick={() => navigate("/search")}
             >
               See all
             </Button>
           </div>
- 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {rides.map((ride, index) => (
               <div 
                 key={ride.id} 
-                className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-                style={{ animationDelay: `${0.15 + index * 0.05}s`, animationFillMode: 'both' }}
+                className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+                style={{ animationDelay: `${0.15 + index * 0.05}s` }}
               >
                 <RideCard ride={ride} onJoinRide={handleJoinRide} />
               </div>
             ))}
+            {rides.length === 0 && (
+              <div className="col-span-full py-20 text-center bg-secondary/10 rounded-[3rem] border border-dashed border-border/50">
+                <div className="w-16 h-16 rounded-[2rem] bg-muted/50 mx-auto mb-4 flex items-center justify-center">
+                  <Car className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest">No rides available</h3>
+                <p className="text-[10px] text-muted-foreground mb-6 uppercase tracking-widest">Be the first to offer a ride today!</p>
+                <Button className="rounded-2xl px-8" onClick={() => navigate("/create-ride")}>
+                  Create Ride
+                </Button>
+              </div>
+            )}
           </div>
-
-        {/* Empty State (when no rides) */}
-        {rides.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
-              <Car className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No rides available</h3>
-            <p className="text-muted-foreground mb-4">Be the first to create a ride!</p>
-            <Button onClick={() => navigate("/create-ride")}>
-              Create Ride
-            </Button>
-          </div>
-        )}
-      </div>
+          {/* Deployment Verification Anchor */}
+          <p className="text-[8px] text-muted-foreground/20 text-center uppercase tracking-widest pt-8">SmartPool Dashboard v2.2</p>
+        </div>
     </Layout>
   );
 };

@@ -32,112 +32,66 @@ import { useAuth } from "../context/AuthContext";
 const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
   const { user } = useAuth();
   const seatsLeft = ride.availableSeats;
-  const seatsFilled = ride.totalSeats - ride.availableSeats;
   const isDriver = user?.id === ride.driverId;
 
   return (
-    <Card className="overflow-hidden transition-all duration-300 hover:shadow-premium hover:-translate-y-1 group animate-fade-in border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardContent className="p-0">
-        <div className="p-5">
-          {/* Driver Info */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12 ring-2 ring-primary/20 transition-transform group-hover:scale-105">
-                <AvatarImage src={ride.driverAvatar} alt={ride.driverName} />
-                <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                  {(ride.driverName || "U").split(' ').filter(Boolean).map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-base text-foreground tracking-tight">{ride.driverName}</span>
-                  {ride.isVerified && (
-                    <span className="verified-badge">
-                      <BadgeCheck className="h-3 w-3" />
-                      Verified
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  <User className="h-3 w-3" />
-                  {ride.driverRole}
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-black text-primary tracking-tighter">₹{ride.pricePerSeat}</div>
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">per seat</span>
-            </div>
+    <Card className="premium-card rounded-[2.5rem] overflow-hidden hover:border-primary/30 cursor-pointer active:scale-[0.98] transition-all bg-white/40 backdrop-blur-sm border-white/30 flex flex-col h-full group" onClick={() => onJoinRide?.(ride.id)}>
+      <CardContent className="p-5 flex flex-col h-full">
+        {/* Header: Price & Status */}
+        <div className="flex justify-between items-start mb-4">
+          <div className={`text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest ${
+            seatsLeft === 0 ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'
+          }`}>
+            {seatsLeft === 0 ? "Full" : `${seatsLeft} Seats`}
           </div>
-
-          {/* Route & Time */}
-          <div className="flex gap-4 mb-6">
-            <div className="flex flex-col items-center py-1">
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-primary bg-background" />
-              <div className="w-[1.5px] flex-1 bg-gradient-to-b from-primary to-accent/30 my-1 rounded-full" />
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-accent bg-background" />
-            </div>
-            <div className="flex-1 space-y-4">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-none mb-1">From</span>
-                <span className="font-semibold text-foreground text-sm line-clamp-1">{ride.source}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-none mb-1">To</span>
-                <span className="font-semibold text-foreground text-sm line-clamp-1">{ride.destination}</span>
-              </div>
-            </div>
-            <div className="flex flex-col justify-between py-1 text-right">
-              <div className="flex flex-col">
-                 <div className="flex items-center justify-end gap-1.5 text-xs font-semibold text-foreground">
-                   <Clock className="h-3.5 w-3.5 text-primary" />
-                   {ride.time}
-                 </div>
-                 <div className="text-[10px] text-muted-foreground font-medium mt-0.5">{ride.date}</div>
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center justify-end gap-1.5 text-xs font-bold text-foreground">
-                  <Users className="h-3.5 w-3.5 text-accent" />
-                  {seatsLeft} / {ride.totalSeats}
-                </div>
-                <div className="text-[10px] text-muted-foreground font-medium mt-0.5">Seats Left</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Seat Visualization */}
-          <div className="flex gap-1.5 mb-2">
-            {Array.from({ length: ride.totalSeats }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                  i < seatsFilled 
-                    ? 'bg-primary shadow-[0_0_8px_rgba(var(--primary),0.4)]' 
-                    : 'bg-muted'
-                }`}
-              />
-            ))}
+          <div className="text-right">
+            <span className="text-xl font-black text-primary tracking-tighter">₹{ride.pricePerSeat}</span>
           </div>
         </div>
 
-        {/* Action */}
-        <div className="px-5 pb-5 pt-2">
-          <Button 
-            className={`w-full h-11 rounded-xl font-bold transition-all active:scale-[0.98] ${
-              isDriver || ride.isPassenger 
-                ? "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border" 
-                : "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-            }`}
-            variant={isDriver || ride.isPassenger ? "ghost" : (seatsLeft === 0 ? "secondary" : "default")}
-            disabled={!isDriver && !ride.isPassenger && seatsLeft === 0}
-            onClick={() => onJoinRide?.(ride.id)}
-          >
-            {isDriver ? "Manage Ride" : (ride.isPassenger ? "View My Ride" : (seatsLeft === 0 ? "Ride Full" : "Request to Join"))}
-          </Button>
+        {/* Route visualization */}
+        <div className="flex-1 space-y-4 mb-6">
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center pt-1">
+              <div className="w-2.5 h-2.5 rounded-full border-2 border-primary bg-background" />
+              <div className="w-[1.5px] h-6 bg-gradient-to-b from-primary to-accent/30 my-0.5 rounded-full" />
+              <div className="w-2.5 h-2.5 rounded-full border-2 border-accent bg-background" />
+            </div>
+            <div className="space-y-3 min-w-0">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">From</p>
+                <p className="font-bold text-xs text-foreground truncate">{ride.source}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">To</p>
+                <p className="font-bold text-xs text-foreground truncate">{ride.destination}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Driver & Footer */}
+        <div className="pt-4 border-t border-border/40 flex items-center justify-between mt-auto">
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar className="h-7 w-7 ring-2 ring-primary/10">
+              <AvatarImage src={ride.driverAvatar} alt={ride.driverName} />
+              <AvatarFallback className="text-[10px] font-black bg-primary/10 text-primary">
+                {(ride.driverName || "U")[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col min-w-0">
+              <p className="text-[10px] font-black text-foreground truncate">{ride.driverName}</p>
+              <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">{ride.time}</p>
+            </div>
+          </div>
+          <div className="p-1.5 rounded-xl bg-primary/10 group-hover:bg-primary group-hover:text-white transition-colors">
+            <ChevronRight className="h-3 w-3" />
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 };
+
 
 export default RideCard;
