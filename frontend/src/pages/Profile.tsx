@@ -185,7 +185,6 @@ const Profile = () => {
                  <p className="text-2xl font-black text-foreground tracking-tighter">{stats.ridesOffered}</p>
                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Offered</p>
                </div>
-               <div 
                 <div 
                   className="py-5 px-2 text-center cursor-pointer hover:bg-white/50 dark:hover:bg-white/5 transition-colors group"
                   onClick={() => {
