@@ -138,100 +138,97 @@ const Profile = () => {
     <Layout showHeader={false}>
       <div className="bg-gradient-hero min-h-screen">
         {/* Profile Header */}
-        <div className="pt-8 pb-6 px-4 text-center animate-fade-in">
-          <Avatar className="h-24 w-24 mx-auto ring-4 ring-primary/20 shadow-elevated">
-            <AvatarImage src="" alt={user?.name} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-              {(user?.name || "U").split(' ').map((n: string) => n[0]).join('')}
-            </AvatarFallback>
-          </Avatar>
+        <div className="pt-10 pb-8 px-4 text-center animate-in fade-in slide-in-from-top-6 duration-700 relative overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-64 bg-gradient-to-b from-primary/20 to-transparent blur-3xl -z-10" />
           
-          <div className="mt-4">
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">{user?.name}</h1>
-              <BadgeCheck className="h-6 w-6 text-success" />
+          <div className="relative inline-block group">
+            <Avatar className="h-28 w-28 mx-auto ring-4 ring-white/50 dark:ring-slate-800/50 shadow-premium transition-transform group-hover:scale-105 duration-500">
+              <AvatarImage src="" alt={user?.name} />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-3xl font-black">
+                {(user?.name || "U").split(' ').map((n: string) => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-1 -right-1 bg-success text-white p-1.5 rounded-full border-4 border-white dark:border-slate-900 shadow-lg">
+              <BadgeCheck className="h-4 w-4" />
             </div>
-            <span className="verified-badge mt-2 inline-flex">
-              {user?.role === "student" ? "Student" : "Faculty"}
-            </span>
           </div>
-
-          {/* Rating */}
-          <div className="flex items-center justify-center gap-1 mt-3">
-            <Star className="h-5 w-5 fill-warning text-warning" />
-            <span className="font-semibold text-foreground">5.0</span>
-            <span className="text-muted-foreground text-sm">rating</span>
+          
+          <div className="mt-5 space-y-2">
+            <h1 className="text-3xl font-black text-foreground tracking-tight">{user?.name}</h1>
+            <div className="flex items-center justify-center gap-2">
+              <div className="verified-badge bg-primary/10 text-primary border-primary/20">
+                {user?.role === "student" ? "Student" : "Faculty"}
+              </div>
+              <div className="flex items-center gap-1 bg-warning/10 px-2.5 py-1 rounded-full border border-warning/20">
+                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                <span className="text-[10px] font-bold text-warning uppercase">5.0 Rating</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <Card className="border-0 shadow-soft">
-            <CardContent className="p-0">
-              <div className="grid grid-cols-3 divide-x divide-border">
-                 <div 
-                   className="p-4 text-center cursor-pointer hover:bg-secondary/50 transition-colors"
-                   onClick={() => {
-                     const element = document.getElementById('recent-rides');
-                     if (element) element.scrollIntoView({ behavior: 'smooth' });
-                   }}
-                 >
-                   <div className="flex items-center justify-center gap-1.5 mb-1">
-                     <Car className="h-4 w-4 text-primary" />
-                     <span className="text-xl font-bold text-foreground">{stats.ridesOffered}</span>
-                   </div>
-                   <p className="text-xs text-muted-foreground">Rides Offered</p>
-                 </div>
-                 <div 
-                   className="p-4 text-center cursor-pointer hover:bg-secondary/50 transition-colors"
-                   onClick={() => {
-                     const element = document.getElementById('recent-rides');
-                     if (element) element.scrollIntoView({ behavior: 'smooth' });
-                   }}
-                 >
-                   <div className="flex items-center justify-center gap-1.5 mb-1">
-                     <MapPin className="h-4 w-4 text-accent" />
-                     <span className="text-xl font-bold text-foreground">{stats.ridesTaken}</span>
-                   </div>
-                   <p className="text-xs text-muted-foreground">Rides Taken</p>
-                 </div>
-                 <div className="p-4 text-center">
-                   <div className="flex items-center justify-center gap-1.5 mb-1">
-                     <span className="text-sm font-bold text-foreground">
-                       {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : '-'}
-                     </span>
-                   </div>
-                   <p className="text-xs text-muted-foreground">Member Since</p>
-                 </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
+          <div className="glass-card rounded-3xl overflow-hidden border-white/20">
+            <div className="grid grid-cols-3 divide-x divide-border/50">
+               <div 
+                 className="py-5 px-2 text-center cursor-pointer hover:bg-white/50 dark:hover:bg-white/5 transition-colors group"
+                 onClick={() => {
+                   const element = document.getElementById('recent-rides');
+                   if (element) element.scrollIntoView({ behavior: 'smooth' });
+                 }}
+               >
+                 <Car className="h-5 w-5 text-primary mx-auto mb-2 transition-transform group-hover:scale-110" />
+                 <p className="text-2xl font-black text-foreground tracking-tighter">{stats.ridesOffered}</p>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Offered</p>
+               </div>
+               <div 
+                 className="py-5 px-2 text-center cursor-pointer hover:bg-white/50 dark:hover:bg-white/5 transition-colors group"
+                 onClick={() => {
+                   const element = document.getElementById('recent-rides');
+                   if (element) element.scrollIntoView({ behavior: 'smooth' });
+                 }}
+               >
+                 <MapPin className="h-5 w-5 text-accent mx-auto mb-2 transition-transform group-hover:scale-110" />
+                 <p className="text-2xl font-black text-foreground tracking-tighter">{stats.ridesTaken}</p>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Taken</p>
+               </div>
+               <div className="py-5 px-2 text-center">
+                 <Calendar className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+                 <p className="text-sm font-black text-foreground tracking-tighter truncate px-1">
+                   {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '-'}
+                 </p>
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Member</p>
+               </div>
+            </div>
+          </div>
         </div>
 
         {/* Contact Info */}
-        <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-          <Card className="border-0 shadow-soft">
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-primary/10">
+        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both">
+          <div className="premium-card rounded-3xl p-5 bg-card/50 backdrop-blur-sm border-border/40">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Account Details</h2>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center transition-colors group-hover:bg-primary/20">
                   <Mail className="h-5 w-5 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-sm font-medium text-foreground">{user?.email}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Email Address</p>
+                  <p className="text-sm font-bold text-foreground truncate">{user?.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-primary/10">
-                  <Phone className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-accent/10 flex items-center justify-center transition-colors group-hover:bg-accent/20">
+                  <Phone className="h-5 w-5 text-accent" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <p className="text-sm font-medium text-foreground">{profileData?.phone || "Update in Settings"}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Phone Number</p>
+                  <p className="text-sm font-bold text-foreground">{profileData?.phone || "Update in Settings"}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Pending Ride Requests (For Owners) */}
@@ -387,33 +384,34 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Menu */}
-        <div className="px-4 mb-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <Card className="border-0 shadow-soft">
-            <CardContent className="p-0">
-              {menuItems.map((item, index) => (
-                <button
-                  key={item.label}
-                  onClick={() => {
-                    if (item.path.startsWith('/')) {
-                      navigate(item.path);
-                    } else {
-                      toast({ title: "Coming soon!", description: `${item.label} feature is under development` });
-                    }
-                  }}
-                  className={`w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors ${
-                    index < menuItems.length - 1 ? 'border-b border-border' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{item.label}</span>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </button>
-              ))}
-            </CardContent>
-          </Card>
+        {/* Menu Grid - Action Tiles */}
+        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400 fill-mode-both">
+          <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {menuItems.map((item, index) => (
+              <button
+                key={item.label}
+                onClick={() => {
+                  if (item.path.startsWith('/')) {
+                    navigate(item.path);
+                  } else {
+                    toast({ title: "Coming soon!", description: `${item.label} feature is under development` });
+                  }
+                }}
+                className="premium-card p-5 rounded-3xl flex flex-col items-start gap-4 text-left group transition-all active:scale-[0.98] bg-card/40 backdrop-blur-sm border-border/40"
+              >
+                <div className={`p-3 rounded-2xl transition-colors group-hover:bg-primary/20 ${index % 2 === 0 ? 'bg-primary/10' : 'bg-accent/10'}`}>
+                  <item.icon className={`h-6 w-6 ${index % 2 === 0 ? 'text-primary' : 'text-accent'}`} />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-black text-sm text-foreground leading-tight">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 group-hover:text-primary transition-colors">
+                    View more <ChevronRight className="h-2.5 w-2.5" />
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Logout */}

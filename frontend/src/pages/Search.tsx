@@ -63,10 +63,10 @@ const Search = () => {
 
   return (
     <Layout userName={user?.name || "Guest"}>
-      <div className="container px-4 py-6 space-y-6">
-        <div className="animate-fade-in">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Find a Ride</h1>
-          <p className="text-muted-foreground">Search for rides between campus and city</p>
+      <div className="container px-4 py-8 space-y-8 animate-in fade-in duration-700">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black text-foreground tracking-tighter">Find your next ride</h1>
+          <p className="text-muted-foreground font-medium">Search for verified student and faculty carpools</p>
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
@@ -75,29 +75,37 @@ const Search = () => {
 
         {/* Results */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <span className="animate-pulse">Searching rides...</span>
+          <div className="text-center py-20 animate-pulse">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 mx-auto mb-4 flex items-center justify-center">
+              <Car className="h-6 w-6 text-primary animate-bounce" />
+            </div>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Searching available rides...</p>
           </div>
         ) : rides.length > 0 ? (
-          <Tabs defaultValue="list" className="w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Results ({rides.length})</h2>
-              <TabsList className="bg-muted/50 p-1 rounded-xl">
-                <TabsTrigger value="list" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-8 px-3">
-                  <List className="h-4 w-4 mr-1.5" />
+          <Tabs defaultValue="list" className="w-full space-y-6">
+            <div className="flex items-center justify-between px-1">
+              <div className="space-y-0.5">
+                <h2 className="text-xl font-bold text-foreground tracking-tight">Search Results</h2>
+                <p className="text-xs text-muted-foreground font-medium">{rides.length} rides found for your route</p>
+              </div>
+              <TabsList className="bg-secondary/50 p-1 rounded-2xl h-11 border border-border/50 backdrop-blur-sm">
+                <TabsTrigger value="list" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg h-9 px-4 font-bold text-xs transition-all">
+                  <List className="h-3.5 w-3.5 mr-1.5" />
                   List
                 </TabsTrigger>
-                <TabsTrigger value="map" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-8 px-3">
-                  <MapIcon className="h-4 w-4 mr-1.5" />
+                <TabsTrigger value="map" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg h-9 px-4 font-bold text-xs transition-all">
+                  <MapIcon className="h-3.5 w-3.5 mr-1.5" />
                   Map
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent value="list" className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 m-0">
-              {rides.map(ride => (
-                <RideCard key={ride.id} ride={ride} onJoinRide={handleJoinRide} />
-              ))}
+            <TabsContent value="list" className="animate-in fade-in slide-in-from-bottom-4 duration-500 m-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {rides.map(ride => (
+                  <RideCard key={ride.id} ride={ride} onJoinRide={handleJoinRide} />
+                ))}
+              </div>
             </TabsContent>
 
             <TabsContent value="map" className="animate-in fade-in slide-in-from-bottom-2 duration-300 m-0">

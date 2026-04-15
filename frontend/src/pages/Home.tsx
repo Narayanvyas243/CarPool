@@ -75,30 +75,34 @@ const Home = () => {
     <Layout userName={user?.name || "Guest"}>
       <div className="container px-4 py-6 space-y-6">
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4 animate-fade-in">
+        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
           <div 
-            className="bg-card rounded-xl p-4 shadow-soft border border-border text-center cursor-pointer hover:border-primary transition-colors h-full flex flex-col items-center justify-center"
+            className="premium-card rounded-3xl p-6 shadow-soft text-center cursor-pointer group flex flex-col items-center justify-center bg-gradient-to-br from-card to-secondary/30"
             onClick={() => {
               const element = document.getElementById('available-rides');
               if (element) element.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            <div className="w-10 h-10 rounded-lg bg-primary/10 mx-auto mb-2 flex items-center justify-center">
-              <Car className="h-5 w-5 text-primary" />
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-primary/20">
+              <Car className="h-7 w-7 text-primary" />
             </div>
-            <p className="text-xl font-bold text-foreground">{stats.activeRides}</p>
-            <p className="text-xs text-muted-foreground">Active Rides</p>
+            <div className="space-y-1">
+              <p className="text-3xl font-black text-foreground tracking-tighter">{stats.activeRides}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Active Rides</p>
+            </div>
           </div>
           
           <div 
-            className="bg-card rounded-xl p-4 shadow-soft border border-border text-center cursor-pointer hover:border-accent transition-colors h-full flex flex-col items-center justify-center"
+            className="premium-card rounded-3xl p-6 shadow-soft text-center cursor-pointer group flex flex-col items-center justify-center bg-gradient-to-br from-card to-secondary/30"
             onClick={() => navigate("/profile")}
           >
-            <div className="w-10 h-10 rounded-lg bg-accent/10 mx-auto mb-2 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-accent" />
+            <div className="w-14 h-14 rounded-2xl bg-accent/10 mx-auto mb-3 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-accent/20">
+              <Clock className="h-7 w-7 text-accent" />
             </div>
-            <p className="text-xl font-bold text-foreground">{stats.ridesTaken}</p>
-            <p className="text-xs text-muted-foreground">Rides Taken</p>
+            <div className="space-y-1">
+              <p className="text-3xl font-black text-foreground tracking-tighter">{stats.ridesTaken}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rides Taken</p>
+            </div>
           </div>
         </div>
 
@@ -108,31 +112,30 @@ const Home = () => {
         </div>
 
         {/* Available Rides */}
-        <div className="space-y-4" id="available-rides">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Available Rides</h2>
+        <div className="space-y-6" id="available-rides">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-bold text-foreground tracking-tight">Available Rides</h2>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-primary"
+              className="text-primary font-bold hover:bg-primary/10 rounded-full px-4"
               onClick={() => navigate("/search")}
             >
               See all
             </Button>
           </div>
-
-          <div className="space-y-4">
+ 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {rides.map((ride, index) => (
               <div 
                 key={ride.id} 
-                className="animate-fade-in"
-                style={{ animationDelay: `${0.15 + index * 0.05}s` }}
+                className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+                style={{ animationDelay: `${0.15 + index * 0.05}s`, animationFillMode: 'both' }}
               >
                 <RideCard ride={ride} onJoinRide={handleJoinRide} />
               </div>
             ))}
           </div>
-        </div>
 
         {/* Empty State (when no rides) */}
         {rides.length === 0 && (

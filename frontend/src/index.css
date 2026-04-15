@@ -46,17 +46,18 @@
     --input: 220 13% 90%;
     --ring: 187 85% 43%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* Custom gradients */
     --gradient-primary: linear-gradient(135deg, hsl(187 85% 43%) 0%, hsl(200 80% 50%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(16 85% 60%) 0%, hsl(30 90% 55%) 100%);
     --gradient-hero: linear-gradient(180deg, hsl(187 85% 43% / 0.1) 0%, hsl(210 20% 98%) 100%);
     
-    /* Shadows */
-    --shadow-soft: 0 4px 20px -2px hsl(220 25% 10% / 0.08);
-    --shadow-card: 0 2px 12px -2px hsl(220 25% 10% / 0.06);
-    --shadow-elevated: 0 8px 30px -4px hsl(220 25% 10% / 0.12);
+    /* Premium Shadows - More depth and softness */
+    --shadow-soft: 0 4px 20px -2px hsl(220 25% 10% / 0.05);
+    --shadow-card: 0 10px 15px -3px hsl(220 25% 10% / 0.04), 0 4px 6px -4px hsl(220 25% 10% / 0.04);
+    --shadow-elevated: 0 20px 25px -5px hsl(220 25% 10% / 0.1), 0 8px 10px -6px hsl(220 25% 10% / 0.1);
+    --shadow-premium: 0 0 0 1px hsl(220 25% 10% / 0.05), 0 10px 30px -5px hsl(220 25% 10% / 0.1);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -137,8 +138,13 @@
 @layer components {
   /* Glass morphism card effect */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border/50;
-    box-shadow: var(--shadow-card);
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/20;
+    box-shadow: var(--shadow-premium);
+  }
+
+  /* Premium Card Hover Effect */
+  .premium-card {
+    @apply bg-card border border-border transition-all duration-300 hover:shadow-premium hover:-translate-y-1;
   }
 
   /* Gradient backgrounds */
@@ -163,17 +169,22 @@
     box-shadow: var(--shadow-elevated);
   }
 
+  .shadow-premium {
+    box-shadow: var(--shadow-premium);
+  }
+
   /* Verified badge styling */
   .verified-badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
-    background: hsl(var(--success) / 0.15);
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider;
+    background: hsl(var(--success) / 0.1);
     color: hsl(var(--success));
+    border: 1px solid hsl(var(--success) / 0.2);
   }
 
   /* Route line decoration */
   .route-line {
-    @apply w-0.5 h-8 mx-auto rounded-full;
-    background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--primary) / 0.3));
+    @apply w-[2px] h-full rounded-full;
+    background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--accent) / 0.5));
   }
 }
 
