@@ -65,8 +65,8 @@ const Notifications = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="ml-4 space-y-0.5">
-            <h1 className="text-xl font-black text-foreground tracking-tight">Notifications</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{notifications.filter(n => !n.isRead).length} Unread</p>
+            <h1 className="text-xl font-black text-foreground tracking-tight">Updates</h1>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-none">SmartPool Notifications v2.4</p>
           </div>
         </div>
       </div>

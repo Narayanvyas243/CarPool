@@ -166,7 +166,7 @@ const Profile = () => {
               </div>
             </div>
             {/* Deployment Verification Anchor */}
-            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.1</p>
+            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.4</p>
           </div>
         </div>
 
@@ -186,23 +186,24 @@ const Profile = () => {
                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Offered</p>
                </div>
                <div 
-                 className="py-5 px-2 text-center cursor-pointer hover:bg-white/50 dark:hover:bg-white/5 transition-colors group"
-                 onClick={() => {
-                   const element = document.getElementById('recent-rides');
-                   if (element) element.scrollIntoView({ behavior: 'smooth' });
-                 }}
-               >
-                 <MapPin className="h-5 w-5 text-accent mx-auto mb-2 transition-transform group-hover:scale-110" />
-                 <p className="text-2xl font-black text-foreground tracking-tighter">{stats.ridesTaken}</p>
-                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Taken</p>
-               </div>
-               <div className="py-5 px-2 text-center">
-                 <Calendar className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-                 <p className="text-sm font-black text-foreground tracking-tighter truncate px-1">
-                   {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '-'}
-                 </p>
-                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Member</p>
-               </div>
+                <div 
+                  className="py-5 px-2 text-center cursor-pointer hover:bg-white/50 dark:hover:bg-white/5 transition-colors group"
+                  onClick={() => {
+                    const element = document.getElementById('recent-rides');
+                    if (element) element.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <MapPin className="h-5 w-5 text-accent mx-auto mb-2 transition-transform group-hover:scale-110" />
+                  <p className="text-2xl font-black text-foreground tracking-tighter">{stats.ridesTaken}</p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Taken</p>
+                </div>
+                <div className="py-5 px-2 text-center">
+                  <Calendar className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm font-black text-foreground tracking-tighter truncate px-1">
+                    {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '-'}
+                  </p>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-1">Member</p>
+                </div>
             </div>
           </div>
         </div>
@@ -289,7 +290,7 @@ const Profile = () => {
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Recent Rides</h2>
             <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase text-primary" onClick={() => navigate("/history")}>View All</Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {[
               ...dashboardData.bookedRides.map(r => ({ 
                 ...r, 
@@ -397,6 +398,10 @@ const Profile = () => {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* History List */}
+        <div className="px-4 space-y-6">
         </div>
 
         {/* Logout */}

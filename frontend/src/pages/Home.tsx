@@ -11,11 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl } from "../apiConfig";
 import { 
-  Car, 
+  ChevronLeft,
+  ChevronRight,
+  History,
+  Calendar,
+  Car,
+  Search,
   Clock, 
   MapPin, 
   Users, 
-  ChevronRight, 
   BadgeCheck 
 } from "lucide-react";
 
@@ -85,28 +89,28 @@ const Home = () => {
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
           <Card 
-            className="premium-card bg-primary/10 border-primary/20 rounded-[2.5rem] p-6 group flex flex-col items-center text-center transition-transform active:scale-95"
+            className="premium-card bg-primary/10 border-primary/20 rounded-[2.5rem] p-8 group flex flex-col items-center text-center transition-transform active:scale-95"
             onClick={() => {
               const element = document.getElementById('available-rides');
               if (element) element.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            <div className="p-3 rounded-2xl bg-primary/20 mb-4 group-hover:scale-110 transition-transform">
-              <Car className="h-7 w-7 text-primary" />
+            <div className="p-4 rounded-3xl bg-primary/20 mb-4 group-hover:scale-110 transition-transform">
+              <Car className="h-8 w-8 text-primary" />
             </div>
-            <p className="text-4xl font-black text-primary tracking-tighter">{stats.activeRides}+</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-2">Active Rides</p>
+            <p className="text-5xl font-black text-primary tracking-tighter">{stats.activeRides}+</p>
+            <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-3">Active Rides</p>
           </Card>
           
           <Card 
-            className="premium-card bg-accent/10 border-accent/20 rounded-[2.5rem] p-6 group flex flex-col items-center text-center transition-transform active:scale-95"
+            className="premium-card bg-accent/10 border-accent/20 rounded-[2.5rem] p-8 group flex flex-col items-center text-center transition-transform active:scale-95"
             onClick={() => navigate("/profile")}
           >
-            <div className="p-3 rounded-2xl bg-accent/20 mb-4 group-hover:scale-110 transition-transform">
-              <Clock className="h-7 w-7 text-accent" />
+            <div className="p-4 rounded-3xl bg-accent/20 mb-4 group-hover:scale-110 transition-transform">
+              <Clock className="h-8 w-8 text-accent" />
             </div>
-            <p className="text-4xl font-black text-accent tracking-tighter">{stats.ridesTaken}</p>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-2">My Journeys</p>
+            <p className="text-5xl font-black text-accent tracking-tighter">{stats.ridesTaken}</p>
+            <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest leading-none mt-3">My Journeys</p>
           </Card>
         </div>
 
@@ -115,45 +119,48 @@ const Home = () => {
           <SearchBar />
         </div>
 
-        {/* Available Rides */}
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both" id="available-rides">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Nearby Rides</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-primary font-black uppercase text-[10px] hover:bg-primary/10 rounded-full px-4"
-              onClick={() => navigate("/search")}
-            >
-              See all
-            </Button>
-          </div>
-  
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rides.map((ride, index) => (
-              <div 
-                key={ride.id} 
-                className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
-                style={{ animationDelay: `${0.15 + index * 0.05}s` }}
+        {/* History List */}
+        <div className="px-4 space-y-6">
+          {/* Available Rides */}
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both" id="available-rides">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Nearby Rides</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-primary font-black uppercase text-[10px] hover:bg-primary/10 rounded-full px-4"
+                onClick={() => navigate("/search")}
               >
-                <RideCard ride={ride} onJoinRide={handleJoinRide} />
-              </div>
-            ))}
-            {rides.length === 0 && (
-              <div className="col-span-full py-20 text-center bg-secondary/10 rounded-[3rem] border border-dashed border-border/50">
-                <div className="w-16 h-16 rounded-[2rem] bg-muted/50 mx-auto mb-4 flex items-center justify-center">
-                  <Car className="h-8 w-8 text-muted-foreground" />
+                See all
+              </Button>
+            </div>
+    
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {rides.map((ride, index) => (
+                <div 
+                  key={ride.id} 
+                  className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+                  style={{ animationDelay: `${0.15 + index * 0.05}s` }}
+                >
+                  <RideCard ride={ride} onJoinRide={handleJoinRide} />
                 </div>
-                <h3 className="text-sm font-black text-foreground uppercase tracking-widest">No rides available</h3>
-                <p className="text-[10px] text-muted-foreground mb-6 uppercase tracking-widest">Be the first to offer a ride today!</p>
-                <Button className="rounded-2xl px-8" onClick={() => navigate("/create-ride")}>
-                  Create Ride
-                </Button>
-              </div>
-            )}
+              ))}
+              {rides.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-secondary/10 rounded-[3rem] border border-dashed border-border/50">
+                  <div className="w-16 h-16 rounded-[2rem] bg-muted/50 mx-auto mb-4 flex items-center justify-center">
+                    <Car className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">No rides available</h3>
+                  <p className="text-[10px] text-muted-foreground mb-6 uppercase tracking-widest">Be the first to offer a ride today!</p>
+                  <Button className="rounded-2xl px-8" onClick={() => navigate("/create-ride")}>
+                    Create Ride
+                  </Button>
+                </div>
+              )}
+            </div>
+            {/* Deployment Verification Anchor */}
+            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.4</p>
           </div>
-          {/* Deployment Verification Anchor */}
-          <p className="text-[8px] text-muted-foreground/20 text-center uppercase tracking-widest pt-8">SmartPool Dashboard v2.2</p>
         </div>
       </div>
     </Layout>
