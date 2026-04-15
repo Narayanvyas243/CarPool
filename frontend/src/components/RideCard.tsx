@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, User, BadgeCheck } from "lucide-react";
+import { MapPin, Clock, Users, User, BadgeCheck, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
