@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import SearchBar from "@/components/SearchBar";
-import RideCard, { RideData } from "@/components/RideCard";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Car, TrendingUp, Clock } from "lucide-react";
+import RideCard, { RideData } from "@/components/RideCard";
+import { MapPin, Clock, Users, User, BadgeCheck, ChevronRight, Car } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
