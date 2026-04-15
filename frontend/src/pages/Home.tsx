@@ -164,6 +164,7 @@ const Home = () => {
           {/* Deployment Verification Anchor */}
           <p className="text-[8px] text-muted-foreground/20 text-center uppercase tracking-widest pt-8">SmartPool Dashboard v2.2</p>
         </div>
+      </div>
     </Layout>
   );
 };
