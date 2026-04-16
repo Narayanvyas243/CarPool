@@ -120,13 +120,20 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
         // Tile Layer
+        console.log("[RideMap] Initializing with mapType:", mapType);
         const layerUrl = mapType === 'satellite' 
           ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
         tileLayerRef.current = L.tileLayer(layerUrl, { 
           maxZoom: 19,
-          attribution: mapType === 'satellite' ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' : '&copy; <a href="https://carto.com/">CARTO</a>'
+          subdomains: mapType === 'voyager' || mapType === 'voyager' ? 'abc' : '',
+          crossOrigin: true,
+          attribution: mapType === 'satellite' 
+            ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' 
+            : '&copy; OpenStreetMap contributors'
+        }).on('tileerror', (e) => {
+          console.error("[RideMap] Tile loading error:", e.url);
         }).addTo(mapInstance.current);
 
         // Markers
@@ -213,13 +220,23 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
   useEffect(() => {
     if (mapInstance.current && (window as any).L && tileLayerRef.current) {
       const L = (window as any).L;
-      mapInstance.current.removeLayer(tileLayerRef.current);
+      console.log("[RideMap] Switching to mapType:", mapType);
+      if (tileLayerRef.current) {
+        mapInstance.current.removeLayer(tileLayerRef.current);
+      }
       const layerUrl = mapType === 'satellite' 
         ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
       tileLayerRef.current = L.tileLayer(layerUrl, { 
         maxZoom: 19,
-        attribution: mapType === 'satellite' ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' : '&copy; <a href="https://carto.com/">CARTO</a>'
+        subdomains: 'abc',
+        crossOrigin: true,
+        attribution: mapType === 'satellite' 
+          ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' 
+          : '&copy; OpenStreetMap contributors'
+      }).on('tileerror', (e) => {
+        console.error("[RideMap] Tile loading error after switch:", e.url);
       }).addTo(mapInstance.current);
     }
   }, [mapType]);

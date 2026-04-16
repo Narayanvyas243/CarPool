@@ -22,8 +22,12 @@ const GlobalRideMap = ({ rides, onSelectRide }: GlobalRideMapProps) => {
         attributionControl: false
       }).setView([30.3165, 78.0322], 12);
 
-      // Add Tile Layer (CartoDB Voyager)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapInstance.current);
+      // Add Tile Layer (OSM)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        subdomains: 'abc',
+        crossOrigin: true,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(mapInstance.current);
 
       layerGroupRef.current = L.layerGroup().addTo(mapInstance.current);
 
