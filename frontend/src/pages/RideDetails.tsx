@@ -289,7 +289,6 @@ const RideDetails = () => {
               ]}
             />
             
-            {/* Real-time Tracking Info Bar */}
             {isTrackingActive && (
               <div className="mt-2 p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-center justify-between animate-pulse-subtle">
                 <div className="flex items-center gap-2">
@@ -306,10 +305,20 @@ const RideDetails = () => {
               </div>
             )}
             
-            {isAlreadyOnboarded && (
-              <div className="mt-2 p-3 bg-success/10 rounded-xl border border-success/20 flex items-center gap-2">
-                <Check className="h-4 w-4 text-success" />
-                <span className="text-xs font-bold text-success">You are Onboarded</span>
+            {!myLocation && (
+              <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground font-medium">Enable GPS to see your location on map</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </Button>
               </div>
             )}
           </div>

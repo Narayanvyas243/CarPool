@@ -124,7 +124,10 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
           ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
           : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
-        tileLayerRef.current = L.tileLayer(layerUrl, { maxZoom: 19 }).addTo(mapInstance.current);
+        tileLayerRef.current = L.tileLayer(layerUrl, { 
+          maxZoom: 19,
+          attribution: mapType === 'satellite' ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' : '&copy; <a href="https://carto.com/">CARTO</a>'
+        }).addTo(mapInstance.current);
 
         // Markers
         const customIcon = L.icon({
@@ -214,7 +217,10 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
       const layerUrl = mapType === 'satellite' 
         ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
         : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-      tileLayerRef.current = L.tileLayer(layerUrl, { maxZoom: 19 }).addTo(mapInstance.current);
+      tileLayerRef.current = L.tileLayer(layerUrl, { 
+        maxZoom: 19,
+        attribution: mapType === 'satellite' ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' : '&copy; <a href="https://carto.com/">CARTO</a>'
+      }).addTo(mapInstance.current);
     }
   }, [mapType]);
 
@@ -300,6 +306,35 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
               {mapType === 'voyager' ? 'Satellite View' : 'Map View'}
             </span>
           </button>
+
+          {/* Quick Controls */}
+          <div className="absolute top-16 right-4 z-[1000] flex flex-col gap-2">
+            <button 
+              onClick={() => {
+                if (mapInstance.current && (window as any).navigator.geolocation) {
+                  (window as any).navigator.geolocation.getCurrentPosition((pos: any) => {
+                    const { latitude, longitude } = pos.coords;
+                    mapInstance.current.setView([latitude, longitude], 16);
+                  });
+                }
+              }}
+              className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 shadow-2xl text-slate-600 hover:text-primary transition-all active:scale-95"
+              title="My Location"
+            >
+              <Navigation className="h-4 w-4" />
+            </button>
+            <button 
+              onClick={() => {
+                if (mapInstance.current && routeLayerRef.current) {
+                  mapInstance.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
+                }
+              }}
+              className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 shadow-2xl text-slate-600 hover:text-primary transition-all active:scale-95"
+              title="Fit to Route"
+            >
+              <MapPin className="h-4 w-4" />
+            </button>
+          </div>
 
           {/* Quick Info */}
           <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-md p-2 rounded-2xl border border-slate-100 shadow-2xl flex items-center gap-2">

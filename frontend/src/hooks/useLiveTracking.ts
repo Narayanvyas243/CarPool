@@ -54,9 +54,31 @@ export const useLiveTracking = (rideId: string, userId: string, role: 'driver' |
               socket.emit("location-update", { rideId, lat, lng, role });
             }
           },
-          (error) => console.error("Geolocation error:", error),
+          (error) => {
+            console.error("Geolocation error:", error);
+            let description = "Failed to get your location.";
+            if (error.code === 1) {
+              description = "Location permission denied. Please allow access to see yourself on the map.";
+            } else if (error.code === 2) {
+              description = "Location information is unavailable.";
+            } else if (error.code === 3) {
+              description = "Location request timed out.";
+            }
+            
+            toast({
+              title: "Location Unreachable",
+              description,
+              variant: "destructive",
+            });
+          },
           { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
         );
+      } else {
+        toast({
+          title: "Not Supported",
+          description: "Geolocation is not supported by your browser.",
+          variant: "destructive",
+        });
       }
     };
 
