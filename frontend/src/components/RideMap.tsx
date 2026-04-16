@@ -125,7 +125,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
           : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
         tileLayerRef.current = L.tileLayer(layerUrl, { 
-          maxZoom: 20,
+          maxZoom: mapType === 'satellite' ? 18 : 20,
           maxNativeZoom: 18,
           crossOrigin: true,
           attribution: '&copy; Google Maps'
@@ -228,7 +228,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
       tileLayerRef.current = L.tileLayer(layerUrl, { 
-        maxZoom: 20,
+        maxZoom: mapType === 'satellite' ? 18 : 20,
         maxNativeZoom: 18,
         crossOrigin: true,
         attribution: '&copy; Google Maps'
