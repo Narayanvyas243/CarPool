@@ -25,6 +25,7 @@ const GlobalRideMap = ({ rides, onSelectRide }: GlobalRideMapProps) => {
       // Add Tile Layer (Google Maps)
       L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         maxZoom: 20,
+        maxNativeZoom: 18,
         crossOrigin: true,
         attribution: '&copy; Google Maps'
       }).addTo(mapInstance.current);

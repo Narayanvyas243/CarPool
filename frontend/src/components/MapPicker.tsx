@@ -121,14 +121,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
         // Initial layer
         const layerUrl = mapType === 'satellite' 
-          ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
         
         tileLayerRef.current = L.tileLayer(layerUrl, {
-          maxZoom: 19,
-          subdomains: 'abc',
+          maxZoom: 20,
+          maxNativeZoom: 18,
           crossOrigin: true,
-          attribution: '&copy; OpenStreetMap'
+          attribution: '&copy; Google Maps'
         }).addTo(mapInstance.current);
 
         const customIcon = L.icon({
@@ -190,14 +190,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       }
       
       const layerUrl = mapType === 'satellite' 
-        ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
       
       tileLayerRef.current = L.tileLayer(layerUrl, {
-        maxZoom: 19,
-        subdomains: 'abc',
+        maxZoom: 20,
+        maxNativeZoom: 18,
         crossOrigin: true,
-        attribution: '&copy; OpenStreetMap'
+        attribution: '&copy; Google Maps'
       }).addTo(mapInstance.current);
     }
   }, [mapType]);
