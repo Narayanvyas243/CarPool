@@ -120,21 +120,22 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
         // Tile Layer
-        console.log("[RideMap] Initializing with mapType:", mapType);
+        console.log("[RideMap] Initializing with Google Tiles. mapType:", mapType);
         const layerUrl = mapType === 'satellite' 
-          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
         tileLayerRef.current = L.tileLayer(layerUrl, { 
-          maxZoom: 19,
-          subdomains: mapType === 'voyager' || mapType === 'voyager' ? 'abc' : '',
+          maxZoom: 20,
           crossOrigin: true,
-          attribution: mapType === 'satellite' 
-            ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' 
-            : '&copy; OpenStreetMap contributors'
+          attribution: '&copy; Google Maps'
         }).on('tileerror', (e) => {
           console.error("[RideMap] Tile loading error:", e.url);
         }).addTo(mapInstance.current);
+
+        // Ensure tile pane is visible
+        const tilePane = mapInstance.current.getPane('tilePane');
+        if (tilePane) tilePane.style.zIndex = '1';
 
         // Markers
         const customIcon = L.icon({
@@ -220,23 +221,20 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
   useEffect(() => {
     if (mapInstance.current && (window as any).L && tileLayerRef.current) {
       const L = (window as any).L;
-      console.log("[RideMap] Switching to mapType:", mapType);
+      console.log("[RideMap] Switching to Google mapType:", mapType);
       if (tileLayerRef.current) {
         mapInstance.current.removeLayer(tileLayerRef.current);
       }
       const layerUrl = mapType === 'satellite' 
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
       tileLayerRef.current = L.tileLayer(layerUrl, { 
-        maxZoom: 19,
-        subdomains: 'abc',
+        maxZoom: 20,
         crossOrigin: true,
-        attribution: mapType === 'satellite' 
-          ? 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' 
-          : '&copy; OpenStreetMap contributors'
+        attribution: '&copy; Google Maps'
       }).on('tileerror', (e) => {
-        console.error("[RideMap] Tile loading error after switch:", e.url);
+        console.error("[RideMap] Tile error after switch:", e.url);
       }).addTo(mapInstance.current);
     }
   }, [mapType]);

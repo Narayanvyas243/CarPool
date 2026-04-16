@@ -22,11 +22,11 @@ const GlobalRideMap = ({ rides, onSelectRide }: GlobalRideMapProps) => {
         attributionControl: false
       }).setView([30.3165, 78.0322], 12);
 
-      // Add Tile Layer (OSM)
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        subdomains: 'abc',
+      // Add Tile Layer (Google Maps)
+      L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
         crossOrigin: true,
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '&copy; Google Maps'
       }).addTo(mapInstance.current);
 
       layerGroupRef.current = L.layerGroup().addTo(mapInstance.current);

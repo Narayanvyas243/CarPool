@@ -121,12 +121,13 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
         // Initial layer
         const layerUrl = mapType === 'satellite' 
-          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
         
         tileLayerRef.current = L.tileLayer(layerUrl, {
-          maxZoom: 19,
-          subdomains: mapType === 'voyager' ? 'abcd' : ''
+          maxZoom: 20,
+          crossOrigin: true,
+          attribution: '&copy; Google Maps'
         }).addTo(mapInstance.current);
 
         const customIcon = L.icon({
@@ -188,12 +189,13 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       }
       
       const layerUrl = mapType === 'satellite' 
-        ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
       
       tileLayerRef.current = L.tileLayer(layerUrl, {
-        maxZoom: 19,
-        subdomains: mapType === 'voyager' ? 'abcd' : ''
+        maxZoom: 20,
+        crossOrigin: true,
+        attribution: '&copy; Google Maps'
       }).addTo(mapInstance.current);
     }
   }, [mapType]);
