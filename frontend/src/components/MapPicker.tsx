@@ -58,11 +58,11 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   const tileLayerRef = useRef<any>(null);
   const markerInstance = useRef<any>(null);
 
-  // Dynamic Loader for Leaflet
+  // Handle checking for Leaflet (L) global
   useEffect(() => {
     if (!isOpen) return;
 
-    const checkAndInit = () => {
+    const check = () => {
       if ((window as any).L) {
         setLibStatus('ready');
         return true;
@@ -70,27 +70,12 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       return false;
     };
 
-    if (checkAndInit()) return;
-
-    // If not found, manually inject
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
-    script.async = true;
-    script.onload = () => setLibStatus('ready');
-    script.onerror = () => setLibStatus('error');
-    document.head.appendChild(script);
-
-    const link = document.createElement('link');
-    link.rel = "stylesheet";
-    link.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
-
-    // Timeout fallback
-    const timer = setTimeout(() => {
-      if (!(window as any).L) setLibStatus('error');
-    }, 5000);
-
-    return () => clearTimeout(timer);
+    if (!check()) {
+        const timer = setInterval(() => {
+            if (check()) clearInterval(timer);
+        }, 100);
+        return () => clearInterval(timer);
+    }
   }, [isOpen]);
 
   // Sync coords when dialog opens
@@ -193,10 +178,9 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   // Handle Resize Visibility (Fixes "White Map" bug)
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || !isOpen) return;
     
-    // Resize Observer to handle the "white screen" issues by invalidating size 
-    // whenever the container changes dimensions (e.g. dialog animation finishes)
+    // Resize Observer handles standard layout changes
     const resizeObserver = new ResizeObserver(() => {
       if (mapInstance.current) {
         mapInstance.current.invalidateSize();
@@ -205,14 +189,20 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
     resizeObserver.observe(mapContainerRef.current);
     
-    // Also run it on a timer for safety during initial animation
-    const timer = setTimeout(() => {
-        if (mapInstance.current) mapInstance.current.invalidateSize();
-    }, 800);
+    // Aggressive "Wake-up" cycle: Invalidate size repeatedly for the first 1.5s
+    // This solves issues where the container is animating or has lazy dimensions
+    let count = 0;
+    const wakeUpInterval = setInterval(() => {
+        if (mapInstance.current) {
+            mapInstance.current.invalidateSize();
+        }
+        count++;
+        if (count > 15) clearInterval(wakeUpInterval);
+    }, 100);
 
     return () => {
         resizeObserver.disconnect();
-        clearTimeout(timer);
+        clearInterval(wakeUpInterval);
     };
   }, [isOpen, libStatus]);
 
