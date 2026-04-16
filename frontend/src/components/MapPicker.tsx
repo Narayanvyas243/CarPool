@@ -121,13 +121,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
         // Initial layer
         const layerUrl = mapType === 'satellite' 
-          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
-          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+          ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
         
         tileLayerRef.current = L.tileLayer(layerUrl, {
-          maxZoom: 20,
+          maxZoom: 19,
+          subdomains: 'abc',
           crossOrigin: true,
-          attribution: '&copy; Google Maps'
+          attribution: '&copy; OpenStreetMap'
         }).addTo(mapInstance.current);
 
         const customIcon = L.icon({
@@ -189,13 +190,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       }
       
       const layerUrl = mapType === 'satellite' 
-        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
-        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+        ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
       
       tileLayerRef.current = L.tileLayer(layerUrl, {
-        maxZoom: 20,
+        maxZoom: 19,
+        subdomains: 'abc',
         crossOrigin: true,
-        attribution: '&copy; Google Maps'
+        attribution: '&copy; OpenStreetMap'
       }).addTo(mapInstance.current);
     }
   }, [mapType]);
@@ -457,8 +459,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           </div>
         </div>
 
-        <div className="flex-1 min-h-[300px] relative z-0 border-y bg-slate-50 flex items-center justify-center">
-          <div ref={mapContainerRef} className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${libStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`} style={{ background: '#f8fafc' }} />
+        <div className="flex-1 min-h-[300px] relative z-0 border-y flex items-center justify-center">
+          <div ref={mapContainerRef} className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${libStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`} />
           
           {/* Layer Toggle Floating Button */}
           {libStatus === 'ready' && (

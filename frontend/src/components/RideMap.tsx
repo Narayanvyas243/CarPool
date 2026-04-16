@@ -120,22 +120,20 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
         // Tile Layer
-        console.log("[RideMap] Initializing with Google Tiles. mapType:", mapType);
         const layerUrl = mapType === 'satellite' 
-          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
-          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+          ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
         tileLayerRef.current = L.tileLayer(layerUrl, { 
-          maxZoom: 20,
+          maxZoom: 19,
+          subdomains: 'abc',
           crossOrigin: true,
-          attribution: '&copy; Google Maps'
-        }).on('tileerror', (e) => {
-          console.error("[RideMap] Tile loading error:", e.url);
+          attribution: '&copy; OpenStreetMap contributors'
         }).addTo(mapInstance.current);
 
-        // Ensure tile pane is visible
-        const tilePane = mapInstance.current.getPane('tilePane');
-        if (tilePane) tilePane.style.zIndex = '1';
+        // Track tile loading
+        tileLayerRef.current.on('tileload', () => console.log("[RideMap] Tile loaded successfully"));
+        tileLayerRef.current.on('tileerror', (e: any) => console.error("[RideMap] Tile failed:", e.url));
 
         // Markers
         const customIcon = L.icon({
@@ -221,20 +219,19 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
   useEffect(() => {
     if (mapInstance.current && (window as any).L && tileLayerRef.current) {
       const L = (window as any).L;
-      console.log("[RideMap] Switching to Google mapType:", mapType);
       if (tileLayerRef.current) {
         mapInstance.current.removeLayer(tileLayerRef.current);
       }
+      
       const layerUrl = mapType === 'satellite' 
-        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
-        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+        ? 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
       tileLayerRef.current = L.tileLayer(layerUrl, { 
-        maxZoom: 20,
+        maxZoom: 19,
+        subdomains: 'abc',
         crossOrigin: true,
-        attribution: '&copy; Google Maps'
-      }).on('tileerror', (e) => {
-        console.error("[RideMap] Tile error after switch:", e.url);
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(mapInstance.current);
     }
   }, [mapType]);
@@ -282,8 +279,8 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
   if (!from.name || !to.name) return null;
 
   return (
-    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-slate-200 shadow-xl relative z-0 bg-slate-50 group">
-      <div ref={mapContainerRef} className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`} />
+    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-slate-200 shadow-xl relative z-0 group">
+      <div ref={mapContainerRef} className="w-full h-full" />
       
       {/* Overlay States */}
       {isLoading && (

@@ -109,8 +109,8 @@ const GlobalRideMap = ({ rides, onSelectRide }: GlobalRideMapProps) => {
   }, [rides, onSelectRide]);
 
   return (
-    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-slate-200 shadow-xl relative z-0 mb-8 bg-slate-50">
-      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
+    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-slate-200 shadow-xl relative z-0 mb-8">
+      <div ref={mapContainerRef} className="w-full h-full" />
     </div>
   );
 };
