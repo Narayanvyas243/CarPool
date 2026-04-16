@@ -23,9 +23,10 @@ interface MapPickerProps {
   onLocationSelect: (location: { address: string; lat: number; lng: number }) => void;
   title?: string;
   initialLocation?: { lat: number; lng: number };
+  type?: 'pickup' | 'dropoff';
 }
 
-const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocation }: MapPickerProps) => {
+const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocation, type = 'pickup' }: MapPickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -153,12 +154,21 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           setErrorMsg(null);
           setCoords({ lat, lng });
           setSelectedName(""); // Clear locked name on manual click
-          setIsConfirming(true); // Ask for confirmation on manual click
           
           if (markerInstance.current) {
             markerInstance.current.setLatLng(e.latlng);
           } else {
             markerInstance.current = L.marker(e.latlng, { icon: customIcon }).addTo(mapInstance.current!);
+          }
+
+          // UX Improvement: Destinations don't need the precision modal
+          if (type === 'dropoff') {
+            // Wait a tiny bit for the marker animation/placement to feel natural
+            setTimeout(() => {
+               handleConfirmDirectly({ lat, lng });
+            }, 300);
+          } else {
+            setIsConfirming(true); // Ask for confirmation only for pickups
           }
         });
 
@@ -178,6 +188,31 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         markerInstance.current = null;
         tileLayerRef.current = null;
       }
+    };
+  }, [isOpen, libStatus]);
+
+  // Handle Resize Visibility (Fixes "White Map" bug)
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    
+    // Resize Observer to handle the "white screen" issues by invalidating size 
+    // whenever the container changes dimensions (e.g. dialog animation finishes)
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstance.current) {
+        mapInstance.current.invalidateSize();
+      }
+    });
+
+    resizeObserver.observe(mapContainerRef.current);
+    
+    // Also run it on a timer for safety during initial animation
+    const timer = setTimeout(() => {
+        if (mapInstance.current) mapInstance.current.invalidateSize();
+    }, 800);
+
+    return () => {
+        resizeObserver.disconnect();
+        clearTimeout(timer);
     };
   }, [isOpen, libStatus]);
 
@@ -233,6 +268,13 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         markerInstance.current.setLatLng([campusOverride.lat, campusOverride.lng]);
       } else {
         markerInstance.current = L.marker([campusOverride.lat, campusOverride.lng], { icon: customIcon }).addTo(mapInstance.current);
+      }
+
+      // UX Improvement: Auto-confirm campus selection for dropoff
+      if (type === 'dropoff') {
+        setTimeout(() => handleConfirmDirectly(campusOverride), 500);
+      } else {
+        setIsConfirming(true);
       }
       return;
     }
@@ -296,7 +338,15 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           
           setErrorMsg(null);
           setCoords({ lat: latitude, lng: longitude });
-          setIsConfirming(true);
+          
+          if (type === 'pickup') {
+            setIsConfirming(true);
+          } else {
+            // For dropoff, just show it on map and let them confirm if they want, 
+            // but usually people use search for dropoff.
+            // If they click 'Locate Me' for dropoff, we just set coords.
+          }
+
           mapInstance.current?.setView([latitude, longitude], 16);
           
           const customIcon = L.icon({
@@ -356,6 +406,20 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
     }
   };
 
+  // New helper for skipping the modal
+  const handleConfirmDirectly = async (targetCoords: {lat: number, lng: number}) => {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${targetCoords.lat}&lon=${targetCoords.lng}`);
+        const data = await res.json();
+        const addressParts = data.display_name.split(',');
+        const address = addressParts.length > 2 ? addressParts.slice(0, 3).join(',') : data.display_name;
+        onLocationSelect({ address, lat: targetCoords.lat, lng: targetCoords.lng });
+      } catch {
+        onLocationSelect({ address: "Selected Location", lat: targetCoords.lat, lng: targetCoords.lng });
+      }
+      setIsOpen(false);
+  };
+
   const handleConfirm = async () => {
     if (coords) {
       if (selectedName) {
@@ -365,16 +429,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         return;
       }
 
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}`);
-        const data = await res.json();
-        const addressParts = data.display_name.split(',');
-        const address = addressParts.length > 2 ? addressParts.slice(0, 3).join(',') : data.display_name;
-        onLocationSelect({ address, lat: coords.lat, lng: coords.lng });
-      } catch {
-        onLocationSelect({ address: searchQuery || "Selected Location", lat: coords.lat, lng: coords.lng });
-      }
-      setIsOpen(false);
+      await handleConfirmDirectly(coords);
     }
   };
 

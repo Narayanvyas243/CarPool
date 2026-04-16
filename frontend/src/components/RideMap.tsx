@@ -51,7 +51,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
 
       // Dictionary of common UPES/Dehradun keywords for fallback
       const COMMON_LOCATIONS: Record<string, { lat: number; lng: number }> = {
-        'bidholi': { lat: 30.398, lng: 77.969 },
+        'bidholi': { lat: 30.4033, lng: 77.9669 },
         'kandoli': { lat: 30.412, lng: 77.962 },
         'prem nagar': { lat: 30.339, lng: 77.966 },
         'isbt': { lat: 30.286, lng: 77.996 },

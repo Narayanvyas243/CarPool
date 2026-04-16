@@ -42,6 +42,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <MapPicker 
                   title="Select Pickup" 
+                  type="pickup"
                   onLocationSelect={(loc) => setFrom(loc.address)} 
                 />
               </div>
@@ -63,6 +64,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <MapPicker 
                   title="Select Destination" 
+                  type="dropoff"
                   onLocationSelect={(loc) => setTo(loc.address)} 
                 />
               </div>
