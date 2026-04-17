@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -148,6 +148,24 @@ const RideDetails = () => {
   const role = isOwner ? 'driver' : (hasBeenAccepted ? 'passenger' : null);
   const isTrackingActive = !!(role && !isAlreadyOnboarded);
 
+  // Compute accepted passengers early so they can be used in hooks below
+  const passengers = useMemo(() => {
+    if (!ride || !ride.requests) return [];
+    return ride.requests
+      .filter((req: any) => req.status === "accepted")
+      .map((req: any) => ({
+        _id: req._id,
+        name: req.requester?.name || "Passenger",
+        avatar: "",
+        phone: req.requester?.phone || "",
+        role: req.requester?.role || "student",
+        email: req.requester?.email || "",
+        isOnboarded: req.isOnboarded,
+        isCompleted: req.isCompleted,
+        requesterId: req.requester?._id
+      }));
+  }, [ride]);
+
   // Hook for live tracking
   const { myLocation, otherLocation, distance, distanceToDestination } = useLiveTracking(
     id || "", 
@@ -234,21 +252,6 @@ const RideDetails = () => {
   const dateObj = new Date(rideTime);
   const formattedDate = dateObj.toLocaleDateString();
   const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  // Compute accepted passengers
-  const passengers = (ride.requests || [])
-    .filter((req: any) => req.status === "accepted")
-    .map((req: any) => ({
-      _id: req._id,
-      name: req.requester?.name || "Passenger",
-      avatar: "",
-      phone: req.requester?.phone || "",
-      role: req.requester?.role || "student",
-      email: req.requester?.email || "",
-      isOnboarded: req.isOnboarded,
-      isCompleted: req.isCompleted,
-      requesterId: req.requester?._id
-    }));
 
   const pendingRequests = (ride.requests || [])
     .filter((req: any) => req.status === "pending");
