@@ -90,6 +90,12 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       return;
     }
 
+    // Reset interaction states on open
+    setIsConfirming(false);
+    setErrorMsg(null);
+    setIsSearching(false);
+    setIsLocating(false);
+
     if (libStatus !== 'ready' || !mapContainerRef.current || !(window as any).L) return;
 
     if (!mapInstance.current) {
@@ -112,7 +118,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       try {
         mapInstance.current = L.map(mapContainerRef.current, {
           zoomControl: true,
-          attributionControl: false
+          attributionControl: false,
+          fadeAnimation: true
         }).setView([startLat, startLng], 14);
 
         // Initial layer
@@ -166,22 +173,28 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           }
         });
 
-        // Forced invalidation after mounting to combat white screen in modals
-        setTimeout(() => {
+        // Robust invalidation cycle for modals
+        const invalidate = () => {
           if (mapInstance.current) {
             mapInstance.current.invalidateSize();
           }
-        }, 100);
-        
-        setTimeout(() => {
-          if (mapInstance.current) {
-            mapInstance.current.invalidateSize();
-            if (initialLocation) mapInstance.current.setView([startLat, startLng], 15);
-          }
-        }, 500);
+        };
 
-      } catch (err) {
+        [100, 300, 600, 1000].forEach(delay => setTimeout(invalidate, delay));
+        
+        if (initialLocation) {
+          setTimeout(() => {
+            if (mapInstance.current) mapInstance.current.setView([startLat, startLng], 15);
+          }, 350);
+        }
+
+      } catch (err: any) {
         console.error("Map init error:", err);
+        // If "Map container is already initialized" error occurs, try to recover
+        if (err.message?.includes("already initialized") && mapContainerRef.current) {
+          // This should technically not happen with our cleanup, but as a fail-safe:
+          (mapContainerRef.current as any)._leaflet_id = null;
+        }
         setLibStatus('error');
       }
     }
@@ -516,7 +529,11 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         </div>
 
         <div className="flex-1 min-h-[300px] relative z-0 border-y flex items-center justify-center">
-          <div ref={mapContainerRef} className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${libStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`} />
+          <div 
+            key={isOpen ? "map-open" : "map-closed"}
+            ref={mapContainerRef} 
+            className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${libStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`} 
+          />
           
           {/* Layer Toggle Floating Button */}
           {libStatus === 'ready' && (
