@@ -53,7 +53,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
            lng <= DDN_BOUNDS.maxLng;
   };
   
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const mapInstance = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const markerInstance = useRef<any>(null);
@@ -96,7 +96,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
     setIsSearching(false);
     setIsLocating(false);
 
-    if (libStatus !== 'ready' || !mapContainerRef.current || !(window as any).L) return;
+    if (libStatus !== 'ready' || !container || !(window as any).L) return;
 
     if (!mapInstance.current) {
       const L = (window as any).L;
@@ -116,7 +116,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       }
 
       try {
-        mapInstance.current = L.map(mapContainerRef.current, {
+        mapInstance.current = L.map(container, {
           zoomControl: true,
           attributionControl: false,
           fadeAnimation: true
@@ -180,7 +180,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           }
         };
 
-        [100, 300, 600, 1000].forEach(delay => setTimeout(invalidate, delay));
+        // Aggressive invalidation for the first 2 seconds to catch modal settle
+        [100, 300, 500, 1000, 2000].forEach(delay => setTimeout(invalidate, delay));
         
         if (initialLocation) {
           setTimeout(() => {
@@ -190,15 +191,13 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
       } catch (err: any) {
         console.error("Map init error:", err);
-        // If "Map container is already initialized" error occurs, try to recover
-        if (err.message?.includes("already initialized") && mapContainerRef.current) {
-          // This should technically not happen with our cleanup, but as a fail-safe:
-          (mapContainerRef.current as any)._leaflet_id = null;
+        if (err.message?.includes("already initialized") && container) {
+          (container as any)._leaflet_id = null;
         }
         setLibStatus('error');
       }
     }
-  }, [isOpen, libStatus, initialLocation]);
+  }, [isOpen, libStatus, container, initialLocation]);
 
   // Handle Resize Visibility (Fixes "White Map" bug)
   useEffect(() => {
@@ -531,7 +530,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         <div className="flex-1 min-h-[300px] relative z-0 border-y flex items-center justify-center">
           <div 
             key={isOpen ? "map-open" : "map-closed"}
-            ref={mapContainerRef} 
+            ref={setContainer} 
             className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${libStatus === 'ready' ? 'opacity-100' : 'opacity-0'}`} 
           />
           
