@@ -2,6 +2,8 @@ const { Server } = require("socket.io");
 
 let ioInstance = null;
 const userSocketMap = new Map();
+// Tracks last proximity check time: "userId:rideId" -> timestamp
+const lastProximityCheckMap = new Map();
 
 // Helper to calculate distance between two coordinates in meters (Haversine formula)
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -57,8 +59,16 @@ const initSocket = (httpServer) => {
         timestamp: new Date()
       });
 
-      // --- NEW: Automatic Ride Completion Prompt Logic ---
+      // --- NEW: Automatic Ride Completion Prompt Logic (with Throttling) ---
       try {
+        const checkKey = `${socket.userId}:${rideId}`;
+        const lastCheck = lastProximityCheckMap.get(checkKey) || 0;
+        const now = Date.now();
+
+        // Only check every 10 seconds to avoid hammering the DB
+        if (now - lastCheck < 10000) return;
+        lastProximityCheckMap.set(checkKey, now);
+
         const Ride = require("./models/Ride");
         const ride = await Ride.findById(rideId);
         if (!ride || !ride.toCoords) return;

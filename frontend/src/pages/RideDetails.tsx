@@ -145,8 +145,20 @@ const RideDetails = () => {
   const isAlreadyOnboarded = myRequest?.isOnboarded;
 
   // Determine role for tracking
-  const role = isOwner ? 'driver' : (hasBeenAccepted ? 'passenger' : null);
   const isTrackingActive = !!(role && !isAlreadyOnboarded);
+  
+  // Memoize map locations to prevent RideMap from re-initializing unnecessarily
+  const mapFrom = useMemo(() => ({
+    lat: ride?.fromCoords?.lat,
+    lng: ride?.fromCoords?.lng,
+    name: ride?.fromLocation
+  }), [ride?.fromCoords?.lat, ride?.fromCoords?.lng, ride?.fromLocation]);
+
+  const mapTo = useMemo(() => ({
+    lat: ride?.toCoords?.lat,
+    lng: ride?.toCoords?.lng,
+    name: ride?.toLocation
+  }), [ride?.toCoords?.lat, ride?.toCoords?.lng, ride?.toLocation]);
 
   // Compute accepted passengers early so they can be used in hooks below
   const passengers = useMemo(() => {
@@ -364,16 +376,8 @@ const RideDetails = () => {
         {ride.fromLocation && ride.toLocation && (
           <div className="animate-fade-in" style={{ animationDelay: "0.02s" }}>
             <RideMap 
-              from={{ 
-                lat: ride.fromCoords?.lat, 
-                lng: ride.fromCoords?.lng, 
-                name: ride.fromLocation 
-              }} 
-              to={{ 
-                lat: ride.toCoords?.lat, 
-                lng: ride.toCoords?.lng, 
-                name: ride.toLocation 
-              }} 
+              from={mapFrom} 
+              to={mapTo} 
               markers={[
                 ...(myLocation ? [{ lat: myLocation.lat, lng: myLocation.lng, label: "You", color: "blue" }] : []),
                 ...(otherLocation ? [{ lat: otherLocation.lat, lng: otherLocation.lng, label: role === 'driver' ? "Passenger" : "Driver", color: "red" }] : [])

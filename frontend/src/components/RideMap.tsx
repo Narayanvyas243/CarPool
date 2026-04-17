@@ -20,6 +20,9 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Geocoding cache to avoid repeated slow API calls
+  const geocodeCache = useRef<Map<string, { lat: number, lng: number }>>(new Map());
 
   // Helper for geocoding
   const geocode = async (name: string) => {
@@ -39,174 +42,32 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
     return null;
   };
 
+  // Initialize Map Once
   useEffect(() => {
     const L = (window as any).L;
-    if (!mapContainerRef.current || !L) return;
+    if (!mapContainerRef.current || !L || mapInstance.current) return;
 
-    const initMap = async () => {
-      setIsLoading(true);
-      setError(null);
+    // Initialize Map
+    mapInstance.current = L.map(mapContainerRef.current, {
+      zoomControl: false,
+      attributionControl: false,
+      scrollWheelZoom: false
+    }).setView([30.316, 78.032], 13); // Default Dehradun
 
-      let fromLat = from.lat;
-      let fromLng = from.lng;
-      let toLat = to.lat;
-      let toLng = to.lng;
+    // Add Zoom Control
+    L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
 
-      // Dictionary of common UPES/Dehradun keywords for fallback
-      const COMMON_LOCATIONS: Record<string, { lat: number; lng: number }> = {
-        'bidholi': { lat: 30.4033, lng: 77.9669 },
-        'kandoli': { lat: 30.412, lng: 77.962 },
-        'prem nagar': { lat: 30.339, lng: 77.966 },
-        'isbt': { lat: 30.286, lng: 77.996 },
-        'clock tower': { lat: 30.324, lng: 78.041 },
-        'ballupur': { lat: 30.334, lng: 78.016 },
-        'jakhan': { lat: 30.358, lng: 78.062 },
-        'rajpur road': { lat: 30.335, lng: 78.058 },
-        'ddn': { lat: 30.316, lng: 78.032 }
-      };
+    // Initial Tile Layer
+    const layerUrl = mapType === 'satellite' 
+      ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+      : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
 
-      const findInDictionary = (name: string) => {
-        const lower = name.toLowerCase();
-        for (const [key, coords] of Object.entries(COMMON_LOCATIONS)) {
-          if (lower.includes(key)) return coords;
-        }
-        return null;
-      };
-
-      // Geocoding Fallbacks
-      if (fromLat == null || fromLng == null) {
-        const dictMatch = findInDictionary(from.name);
-        if (dictMatch) {
-          fromLat = dictMatch.lat;
-          fromLng = dictMatch.lng;
-        } else {
-          const coords = await geocode(from.name);
-          if (coords) {
-            fromLat = coords.lat;
-            fromLng = coords.lng;
-          }
-        }
-      }
-
-      if (toLat == null || toLng == null) {
-        const dictMatch = findInDictionary(to.name);
-        if (dictMatch) {
-          toLat = dictMatch.lat;
-          toLng = dictMatch.lng;
-        } else {
-          const coords = await geocode(to.name);
-          if (coords) {
-            toLat = coords.lat;
-            toLng = coords.lng;
-          }
-        }
-      }
-
-      if (fromLat == null || fromLng == null || toLat == null || toLng == null) {
-        setError("Map coordinates could not be found for these locations.");
-        setIsLoading(false);
-        return;
-      }
-
-      const fromPos: [number, number] = [fromLat, fromLng];
-      const toPos: [number, number] = [toLat, toLng];
-
-      if (!mapInstance.current) {
-        // Initialize Map
-        mapInstance.current = L.map(mapContainerRef.current, {
-          zoomControl: false,
-          attributionControl: false,
-          scrollWheelZoom: false
-        }).setView(fromPos, 13);
-
-        // Add Zoom Control at custom position
-        L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
-
-        // Tile Layer
-        const layerUrl = mapType === 'satellite' 
-          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
-          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
-
-        tileLayerRef.current = L.tileLayer(layerUrl, { 
-          maxZoom: mapType === 'satellite' ? 18 : 20,
-          maxNativeZoom: 18,
-          crossOrigin: true,
-          attribution: '&copy; Google Maps'
-        }).addTo(mapInstance.current);
-
-        // Track tile loading
-        tileLayerRef.current.on('tileload', () => console.log("[RideMap] Tile loaded successfully"));
-        tileLayerRef.current.on('tileerror', (e: any) => console.error("[RideMap] Tile failed:", e.url));
-
-        // Markers
-        const customIcon = L.icon({
-          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41]
-        });
-
-        const dropIcon = L.icon({
-          iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41]
-        });
-
-        L.marker(fromPos, { icon: customIcon }).addTo(mapInstance.current).bindPopup(`<b>Pickup:</b><br/>${from.name}`);
-        L.marker(toPos, { icon: dropIcon }).addTo(mapInstance.current).bindPopup(`<b>Drop-off:</b><br/>${to.name}`);
-
-        // Route Fetching (OSRM)
-        const fetchRoute = async () => {
-          try {
-            const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
-            const data = await res.json();
-            
-            if (data.routes && data.routes.length > 0) {
-              const coordinates = data.routes[0].geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
-              if (routeLayerRef.current) mapInstance.current.removeLayer(routeLayerRef.current);
-              
-              routeLayerRef.current = L.polyline(coordinates, {
-                color: '#3b82f6',
-                weight: 6,
-                opacity: 0.8,
-                lineJoin: 'round'
-              }).addTo(mapInstance.current);
-
-              mapInstance.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
-            } else {
-              drawStraightLine();
-            }
-          } catch (err) {
-            console.error("OSRM error:", err);
-            drawStraightLine();
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
-        const drawStraightLine = () => {
-          if (routeLayerRef.current) mapInstance.current.removeLayer(routeLayerRef.current);
-          routeLayerRef.current = L.polyline([fromPos, toPos], {
-            color: '#3b82f6',
-            weight: 4,
-            opacity: 0.6,
-            dashArray: '10, 10'
-          }).addTo(mapInstance.current);
-          mapInstance.current.fitBounds(L.latLngBounds([fromPos, toPos]), { padding: [50, 50] });
-        };
-
-        fetchRoute();
-      } else {
-        setIsLoading(false);
-      }
-
-      setTimeout(() => {
-        if (mapInstance.current) mapInstance.current.invalidateSize();
-      }, 500);
-    };
-
-    initMap();
+    tileLayerRef.current = L.tileLayer(layerUrl, { 
+      maxZoom: mapType === 'satellite' ? 18 : 20,
+      maxNativeZoom: 18,
+      crossOrigin: true,
+      attribution: '&copy; Google Maps'
+    }).addTo(mapInstance.current);
 
     return () => {
       if (mapInstance.current) {
@@ -216,6 +77,127 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         tileLayerRef.current = null;
       }
     };
+  }, []); // Run ONLY once on mount
+
+  // Handle Route and Geocoding Updates
+  useEffect(() => {
+    const L = (window as any).L;
+    if (!mapInstance.current || !L) return;
+
+    const updateRoute = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      let fromLat = from.lat;
+      let fromLng = from.lng;
+      let toLat = to.lat;
+      let toLng = to.lng;
+
+      const findInDictionary = (name: string) => {
+        const lower = name.toLowerCase();
+        const COMMON_LOCATIONS: Record<string, { lat: number; lng: number }> = {
+            'bidholi': { lat: 30.4033, lng: 77.9669 },
+            'kandoli': { lat: 30.412, lng: 77.962 },
+            'prem nagar': { lat: 30.339, lng: 77.966 },
+            'isbt': { lat: 30.286, lng: 77.996 },
+            'clock tower': { lat: 30.324, lng: 78.041 },
+            'ballupur': { lat: 30.334, lng: 78.016 },
+            'jakhan': { lat: 30.358, lng: 78.062 },
+            'rajpur road': { lat: 30.335, lng: 78.058 },
+            'ddn': { lat: 30.316, lng: 78.032 }
+          };
+        for (const [key, coords] of Object.entries(COMMON_LOCATIONS)) {
+          if (lower.includes(key)) return coords;
+        }
+        return null;
+      };
+
+      const getCoords = async (name: string) => {
+        if (geocodeCache.current.has(name)) return geocodeCache.current.get(name);
+        const dictMatch = findInDictionary(name);
+        if (dictMatch) return dictMatch;
+        const coords = await geocode(name);
+        if (coords) geocodeCache.current.set(name, coords);
+        return coords;
+      };
+
+      if (fromLat == null || fromLng == null) {
+        const coords = await getCoords(from.name);
+        if (coords) { fromLat = coords.lat; fromLng = coords.lng; }
+      }
+      if (toLat == null || toLng == null) {
+        const coords = await getCoords(to.name);
+        if (coords) { toLat = coords.lat; toLng = coords.lng; }
+      }
+
+      if (fromLat == null || fromLng == null || toLat == null || toLng == null) {
+        setError("Map coordinates could not be found.");
+        setIsLoading(false);
+        return;
+      }
+
+      const fromPos: [number, number] = [fromLat, fromLng];
+      const toPos: [number, number] = [toLat, toLng];
+
+      // Update Main Markers
+      // Clear existing main markers (not live tracking ones)
+      mapInstance.current.eachLayer((layer: any) => {
+        if (layer instanceof L.Marker && !layer.liveTracking) {
+          mapInstance.current.removeLayer(layer);
+        }
+      });
+
+      const customIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41]
+      });
+
+      const dropIcon = L.icon({
+        iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41]
+      });
+
+      L.marker(fromPos, { icon: customIcon }).addTo(mapInstance.current).bindPopup(`<b>Pickup:</b><br/>${from.name}`);
+      L.marker(toPos, { icon: dropIcon }).addTo(mapInstance.current).bindPopup(`<b>Drop-off:</b><br/>${to.name}`);
+
+      // Fetch OSRM Route
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`);
+        const data = await res.json();
+        
+        if (data.routes && data.routes.length > 0) {
+          const coordinates = data.routes[0].geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
+          if (routeLayerRef.current) mapInstance.current.removeLayer(routeLayerRef.current);
+          
+          routeLayerRef.current = L.polyline(coordinates, {
+            color: '#3b82f6', weight: 6, opacity: 0.8, lineJoin: 'round'
+          }).addTo(mapInstance.current);
+
+          mapInstance.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [50, 50] });
+        } else {
+            drawStraightLine(fromPos, toPos);
+        }
+      } catch (err) {
+        drawStraightLine(fromPos, toPos);
+      } finally {
+        setIsLoading(false);
+        mapInstance.current.invalidateSize();
+      }
+    };
+
+    const drawStraightLine = (fromPos: [number, number], toPos: [number, number]) => {
+      if (routeLayerRef.current) mapInstance.current.removeLayer(routeLayerRef.current);
+      routeLayerRef.current = L.polyline([fromPos, toPos], {
+        color: '#3b82f6', weight: 4, opacity: 0.6, dashArray: '10, 10'
+      }).addTo(mapInstance.current);
+      mapInstance.current.fitBounds(L.latLngBounds([fromPos, toPos]), { padding: [50, 50] });
+    };
+
+    updateRoute();
   }, [from.lat, from.lng, to.lat, to.lng, from.name, to.name]);
 
   // Handle layer switching
@@ -265,6 +247,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
                 opacity: 1,
                 fillOpacity: 1
             }).addTo(mapInstance.current).bindPopup(m.label);
+            (circleMarker as any).liveTracking = true; // Mark as live tracker
             liveMarkersRef.current.set(m.label, circleMarker);
         }
     });
