@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Layers, MapPin, Navigation, Info, AlertTriangle, Loader2, Locate, ExternalLink } from "lucide-react";
+import { Layers, MapPin, Navigation, Info, AlertTriangle, Loader2, Locate } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface RideMapProps {
@@ -387,7 +387,7 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
                       variant: "destructive"
                     });
                   },
-                  { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                  { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
                 );
               }}
               disabled={isLocating}
@@ -406,16 +406,6 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
               title="Fit to Route"
             >
               <MapPin className="h-4 w-4" />
-            </button>
-            <button 
-              onClick={() => {
-                const url = `https://www.google.com/maps/dir/?api=1&origin=${from.lat},${from.lng}&destination=${to.lat},${to.lng}&travelmode=driving`;
-                window.open(url, '_blank');
-              }}
-              className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 shadow-2xl text-slate-600 hover:text-primary transition-all active:scale-95"
-              title="Open in External Maps"
-            >
-              <ExternalLink className="h-4 w-4" />
             </button>
           </div>
 
