@@ -208,6 +208,15 @@
   }
 
   /* Global Leaflet Fixes */
+  .leaflet-container {
+    height: 100% !important;
+    width: 100% !important;
+    z-index: 1 !important;
+    outline: none;
+  }
+  .leaflet-pane {
+    z-index: 1 !important;
+  }
   .leaflet-tile-container {
     visibility: visible !important;
     opacity: 1 !important;

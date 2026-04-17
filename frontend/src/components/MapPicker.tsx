@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import L from "leaflet";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [libStatus, setLibStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [libStatus, setLibStatus] = useState<'loading' | 'ready' | 'error'>('ready');
   const [selectedName, setSelectedName] = useState("");
   const [mapType, setMapType] = useState<'voyager' | 'satellite'>('voyager');
   const [isLocating, setIsLocating] = useState(false);
@@ -54,31 +55,11 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
   };
   
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
-  const mapInstance = useRef<any>(null);
-  const tileLayerRef = useRef<any>(null);
-  const markerInstance = useRef<any>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const markerInstance = useRef<L.Marker | null>(null);
 
-  // Handle checking for Leaflet (L) global
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const check = () => {
-      if ((window as any).L) {
-        setLibStatus('ready');
-        return true;
-      }
-      return false;
-    };
-
-    if (!check()) {
-        const timer = setInterval(() => {
-            if (check()) clearInterval(timer);
-        }, 100);
-        return () => clearInterval(timer);
-    }
-  }, [isOpen]);
-
-  // Sync coords and Map Initialization logic
+  // Map Initialization logic
   useEffect(() => {
     if (!isOpen) {
       if (mapInstance.current) {
@@ -96,112 +77,104 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
     setIsSearching(false);
     setIsLocating(false);
 
-    if (libStatus !== 'ready' || !container || !(window as any).L) return;
+    if (!container) return;
 
-    if (!mapInstance.current) {
-      const L = (window as any).L;
-      
-      // Sync coords from initialLocation if provided
-      let startLat = 30.3165;
-      let startLng = 78.0322;
-      
-      if (initialLocation) {
-        startLat = initialLocation.lat;
-        startLng = initialLocation.lng;
-        setCoords({ lat: startLat, lng: startLng });
-        setSelectedName("");
-      } else {
-        setCoords(null);
-        setSelectedName("");
-      }
-
-      try {
-        mapInstance.current = L.map(container, {
-          zoomControl: true,
-          attributionControl: false,
-          fadeAnimation: true
-        }).setView([startLat, startLng], 14);
-
-        // Initial layer
-        const layerUrl = mapType === 'satellite' 
-          ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
-          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+    // Use a timeout to ensure the Radix Dialog animation has settled
+    const initTimer = setTimeout(() => {
+      if (!mapInstance.current && container && isOpen) {
+        // Sync coords from initialLocation if provided
+        let startLat = 30.3165;
+        let startLng = 78.0322;
         
-        tileLayerRef.current = L.tileLayer(layerUrl, {
-          maxZoom: mapType === 'satellite' ? 18 : 20,
-          maxNativeZoom: 18,
-          crossOrigin: true,
-          attribution: '&copy; Google Maps'
-        }).addTo(mapInstance.current);
-
-        const customIcon = L.icon({
-          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41]
-        });
-
         if (initialLocation) {
-          markerInstance.current = L.marker([startLat, startLng], { icon: customIcon }).addTo(mapInstance.current);
+          startLat = initialLocation.lat;
+          startLng = initialLocation.lng;
+          setCoords({ lat: startLat, lng: startLng });
+          setSelectedName("");
+        } else {
+          setCoords(null);
+          setSelectedName("");
         }
 
-        mapInstance.current.on('click', (e: any) => {
-          const { lat, lng } = e.latlng;
+        try {
+          mapInstance.current = L.map(container, {
+            zoomControl: true,
+            attributionControl: false,
+            fadeAnimation: true
+          }).setView([startLat, startLng], 14);
+
+          // Initial layer
+          const layerUrl = mapType === 'satellite' 
+            ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' 
+            : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
           
-          if (!isLocationInDehradun(lat, lng)) {
-            setErrorMsg("This location is outside Dehradun. Please select a point within the city/university area.");
-            return;
-          }
-          
-          setErrorMsg(null);
-          setCoords({ lat, lng });
-          setSelectedName(""); // Clear locked name on manual click
-          
-          if (markerInstance.current) {
-            markerInstance.current.setLatLng(e.latlng);
-          } else {
-            markerInstance.current = L.marker(e.latlng, { icon: customIcon }).addTo(mapInstance.current!);
+          tileLayerRef.current = L.tileLayer(layerUrl, {
+            maxZoom: mapType === 'satellite' ? 18 : 20,
+            maxNativeZoom: 18,
+            crossOrigin: true,
+            attribution: '&copy; Google Maps'
+          }).addTo(mapInstance.current);
+
+          const customIcon = L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+          });
+
+          if (initialLocation) {
+            markerInstance.current = L.marker([startLat, startLng], { icon: customIcon }).addTo(mapInstance.current);
           }
 
-          // UX Improvement: Destinations don't need the precision modal
-          if (type === 'dropoff') {
-            setTimeout(() => {
-               handleConfirmDirectly({ lat, lng });
-            }, 300);
-          } else {
-            setIsConfirming(true); // Ask for confirmation only for pickups
-          }
-        });
+          mapInstance.current.on('click', (e: L.LeafletMouseEvent) => {
+            const { lat, lng } = e.latlng;
+            
+            if (!isLocationInDehradun(lat, lng)) {
+              setErrorMsg("This location is outside Dehradun. Please select a point within the city/university area.");
+              return;
+            }
+            
+            setErrorMsg(null);
+            setCoords({ lat, lng });
+            setSelectedName(""); // Clear locked name on manual click
+            
+            if (markerInstance.current) {
+              markerInstance.current.setLatLng(e.latlng);
+            } else {
+              markerInstance.current = L.marker(e.latlng, { icon: customIcon }).addTo(mapInstance.current!);
+            }
 
-        // Robust invalidation cycle for modals
-        const invalidate = () => {
-          if (mapInstance.current) {
-            mapInstance.current.invalidateSize();
-          }
-        };
+            // UX Improvement: Destinations don't need the precision modal
+            if (type === 'dropoff') {
+              setTimeout(() => {
+                 handleConfirmDirectly({ lat, lng });
+              }, 300);
+            } else {
+              setIsConfirming(true); // Ask for confirmation only for pickups
+            }
+          });
 
-        // Aggressive invalidation for the first 2 seconds to catch modal settle
-        [100, 300, 500, 1000, 2000].forEach(delay => setTimeout(invalidate, delay));
-        
-        if (initialLocation) {
+          // Final invalidation to be sure
           setTimeout(() => {
-            if (mapInstance.current) mapInstance.current.setView([startLat, startLng], 15);
-          }, 350);
-        }
+            mapInstance.current?.invalidateSize();
+          }, 100);
 
-      } catch (err: any) {
-        console.error("Map init error:", err);
-        if (err.message?.includes("already initialized") && container) {
-          (container as any)._leaflet_id = null;
+        } catch (err: any) {
+          console.error("Map init error:", err);
+          if (err.message?.includes("already initialized") && container) {
+            (container as any)._leaflet_id = null;
+          }
+          setLibStatus('error');
         }
-        setLibStatus('error');
       }
-    }
-  }, [isOpen, libStatus, container, initialLocation]);
+    }, 400);
+
+    return () => clearTimeout(initTimer);
+  }, [isOpen, container, initialLocation]);
 
   // Handle Resize Visibility (Fixes "White Map" bug)
   useEffect(() => {
-    if (!mapContainerRef.current || !isOpen) return;
+    if (!container || !isOpen) return;
     
     // Resize Observer handles standard layout changes
     const resizeObserver = new ResizeObserver(() => {
@@ -210,24 +183,23 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
       }
     });
 
-    resizeObserver.observe(mapContainerRef.current);
+    resizeObserver.observe(container);
     
     // Aggressive "Wake-up" cycle: Invalidate size repeatedly for the first 1.5s
-    // This solves issues where the container is animating or has lazy dimensions
     let count = 0;
     const wakeUpInterval = setInterval(() => {
         if (mapInstance.current) {
             mapInstance.current.invalidateSize();
         }
         count++;
-        if (count > 15) clearInterval(wakeUpInterval);
+        if (count > 20) clearInterval(wakeUpInterval);
     }, 100);
 
     return () => {
         resizeObserver.disconnect();
         clearInterval(wakeUpInterval);
     };
-  }, [isOpen, libStatus]);
+  }, [isOpen, container]);
 
   // Handle layer switching
   useEffect(() => {
