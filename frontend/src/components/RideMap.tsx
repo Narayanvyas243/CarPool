@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Layers, MapPin, Navigation, Info, AlertTriangle, Loader2 } from "lucide-react";
+import { Layers, MapPin, Navigation, Info, AlertTriangle, Loader2, Locate, ExternalLink } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface RideMapProps {
   from: { lat: number | null | undefined; lng: number | null | undefined; name: string };
@@ -14,8 +15,10 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
   const liveMarkersRef = useRef<Map<string, any>>(new Map());
   const routeLayerRef = useRef<any>(null);
   
+  const { toast } = useToast();
   const [mapType, setMapType] = useState<'voyager' | 'satellite'>('voyager');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Helper for geocoding
@@ -323,17 +326,75 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
           <div className="absolute top-16 right-4 z-[1000] flex flex-col gap-2">
             <button 
               onClick={() => {
-                if (mapInstance.current && (window as any).navigator.geolocation) {
-                  (window as any).navigator.geolocation.getCurrentPosition((pos: any) => {
-                    const { latitude, longitude } = pos.coords;
-                    mapInstance.current.setView([latitude, longitude], 16);
+                if (!mapInstance.current) return;
+                
+                if (!navigator.geolocation) {
+                  toast({
+                    title: "Not Supported",
+                    description: "Geolocation is not supported by your browser.",
+                    variant: "destructive"
                   });
+                  return;
                 }
+
+                setIsLocating(true);
+                toast({
+                  title: "Locating...",
+                  description: "Fetching your current position."
+                });
+
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    console.log("[RideMap] User located at:", latitude, longitude);
+                    
+                    if (mapInstance.current) {
+                      mapInstance.current.setView([latitude, longitude], 16);
+                      
+                      // Small circle marker for user location if not already in markers
+                      const L = (window as any).L;
+                      L.circleMarker([latitude, longitude], {
+                        radius: 8,
+                        fillColor: '#3b82f6',
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                      }).addTo(mapInstance.current).bindPopup("You are here").openPopup();
+
+                      setTimeout(() => {
+                        mapInstance.current.invalidateSize();
+                      }, 100);
+                    }
+                    
+                    setIsLocating(false);
+                    toast({
+                      title: "Location Found",
+                      description: "Map centered on your position."
+                    });
+                  },
+                  (err) => {
+                    console.error("[RideMap] Geolocation error:", err);
+                    setIsLocating(false);
+                    let message = "Could not retrieve your location.";
+                    if (err.code === 1) message = "Location permission denied.";
+                    else if (err.code === 2) message = "Location unavailable.";
+                    else if (err.code === 3) message = "Location request timed out.";
+                    
+                    toast({
+                      title: "Location Error",
+                      description: message,
+                      variant: "destructive"
+                    });
+                  },
+                  { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
               }}
-              className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 shadow-2xl text-slate-600 hover:text-primary transition-all active:scale-95"
+              disabled={isLocating}
+              className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 shadow-2xl text-slate-600 hover:text-primary transition-all active:scale-95 disabled:opacity-50"
               title="My Location"
             >
-              <Navigation className="h-4 w-4" />
+              {isLocating ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Locate className="h-4 w-4" />}
             </button>
             <button 
               onClick={() => {
@@ -345,6 +406,16 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
               title="Fit to Route"
             >
               <MapPin className="h-4 w-4" />
+            </button>
+            <button 
+              onClick={() => {
+                const url = `https://www.google.com/maps/dir/?api=1&origin=${from.lat},${from.lng}&destination=${to.lat},${to.lng}&travelmode=driving`;
+                window.open(url, '_blank');
+              }}
+              className="bg-white/95 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 shadow-2xl text-slate-600 hover:text-primary transition-all active:scale-95"
+              title="Open in External Maps"
+            >
+              <ExternalLink className="h-4 w-4" />
             </button>
           </div>
 
