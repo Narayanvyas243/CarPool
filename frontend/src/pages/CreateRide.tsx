@@ -178,6 +178,7 @@ const CreateRide = () => {
                     <MapPicker 
                       title="Select Pickup Location" 
                       type="pickup"
+                      initialLocation={fromCoords || undefined}
                       onLocationSelect={(loc) => {
                         setSource(loc.address);
                         setFromCoords({ lat: loc.lat, lng: loc.lng });
@@ -206,6 +207,7 @@ const CreateRide = () => {
                     <MapPicker 
                       title="Select Drop-off Location" 
                       type="dropoff"
+                      initialLocation={toCoords || undefined}
                       onLocationSelect={(loc) => {
                         setDestination(loc.address);
                         setToCoords({ lat: loc.lat, lng: loc.lng });

@@ -78,32 +78,42 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
     }
   }, [isOpen]);
 
-  // Sync coords when dialog opens
+  // Sync coords and Map Initialization logic
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+        markerInstance.current = null;
+        tileLayerRef.current = null;
+      }
+      return;
+    }
+
+    if (libStatus !== 'ready' || !mapContainerRef.current || !(window as any).L) return;
+
+    if (!mapInstance.current) {
+      const L = (window as any).L;
+      
+      // Sync coords from initialLocation if provided
+      let startLat = 30.3165;
+      let startLng = 78.0322;
+      
       if (initialLocation) {
-        setCoords({ lat: initialLocation.lat, lng: initialLocation.lng });
+        startLat = initialLocation.lat;
+        startLng = initialLocation.lng;
+        setCoords({ lat: startLat, lng: startLng });
         setSelectedName("");
       } else {
         setCoords(null);
         setSelectedName("");
       }
-    }
-  }, [isOpen, initialLocation]);
-
-  // Map Initialization logic
-  useEffect(() => {
-    if (isOpen && libStatus === 'ready' && mapContainerRef.current && (window as any).L && !mapInstance.current) {
-      const L = (window as any).L;
-      const initialCoords: [number, number] = coords 
-        ? [coords.lat, coords.lng] 
-        : [30.3165, 78.0322];
 
       try {
         mapInstance.current = L.map(mapContainerRef.current, {
           zoomControl: true,
           attributionControl: false
-        }).setView(initialCoords, 14);
+        }).setView([startLat, startLng], 14);
 
         // Initial layer
         const layerUrl = mapType === 'satellite' 
@@ -124,8 +134,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           iconAnchor: [12, 41]
         });
 
-        if (coords) {
-          markerInstance.current = L.marker([coords.lat, coords.lng], { icon: customIcon }).addTo(mapInstance.current);
+        if (initialLocation) {
+          markerInstance.current = L.marker([startLat, startLng], { icon: customIcon }).addTo(mapInstance.current);
         }
 
         mapInstance.current.on('click', (e: any) => {
@@ -148,7 +158,6 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
           // UX Improvement: Destinations don't need the precision modal
           if (type === 'dropoff') {
-            // Wait a tiny bit for the marker animation/placement to feel natural
             setTimeout(() => {
                handleConfirmDirectly({ lat, lng });
             }, 300);
@@ -157,24 +166,26 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           }
         });
 
+        // Forced invalidation after mounting to combat white screen in modals
         setTimeout(() => {
-          if (mapInstance.current) mapInstance.current.invalidateSize();
-        }, 600);
+          if (mapInstance.current) {
+            mapInstance.current.invalidateSize();
+          }
+        }, 100);
+        
+        setTimeout(() => {
+          if (mapInstance.current) {
+            mapInstance.current.invalidateSize();
+            if (initialLocation) mapInstance.current.setView([startLat, startLng], 15);
+          }
+        }, 500);
+
       } catch (err) {
         console.error("Map init error:", err);
         setLibStatus('error');
       }
     }
-
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-        markerInstance.current = null;
-        tileLayerRef.current = null;
-      }
-    };
-  }, [isOpen, libStatus]);
+  }, [isOpen, libStatus, initialLocation]);
 
   // Handle Resize Visibility (Fixes "White Map" bug)
   useEffect(() => {
