@@ -282,7 +282,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         }
 
         setCoords({ lat, lng: lon });
-        setSelectedName(""); // Clear locked name on new search
+        const namePart = data[0].display_name.split(',')[0];
+        setSelectedName(namePart); // Preserve the specific name found in search
         setIsConfirming(true);
         mapInstance.current.setView([lat, lon], 15);
         
@@ -327,9 +328,6 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           if (type === 'pickup') {
             setIsConfirming(true);
           } else {
-            // For dropoff, just show it on map and let them confirm if they want, 
-            // but usually people use search for dropoff.
-            // If they click 'Locate Me' for dropoff, we just set coords.
           }
 
           mapInstance.current?.setView([latitude, longitude], 16);
@@ -351,7 +349,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           const findNearbyCampus = () => {
             for (const loc of QUICK_LOCATIONS) {
               const dist = Math.sqrt(Math.pow(loc.lat - latitude, 2) + Math.pow(loc.lng - longitude, 2));
-              if (dist < 0.006) return loc.name;
+              if (dist < 0.003) return loc.name; // Use same threshold as reverse geocode
             }
             return null;
           };
@@ -364,12 +362,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
               .then(res => res.json())
               .then(data => {
-                const shortAddress = data.display_name.split(',').slice(0, 2).join(',');
-                setSearchQuery(shortAddress);
-                setSelectedName("");
+                const addr = data.address;
+                const mainName = addr.amenity || addr.building || addr.university || addr.road || addr.suburb || "My Location";
+                setSearchQuery(mainName);
+                setSelectedName(mainName);
               })
               .catch(() => {
                 setSearchQuery(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                setSelectedName("");
               });
           }
           setIsLocating(false);
@@ -391,30 +391,61 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
     }
   };
 
-  // New helper for skipping the modal
-  const handleConfirmDirectly = async (targetCoords: {lat: number, lng: number}) => {
+  // New helper for skipping the modal and improving address names
+  const handleConfirmDirectly = async (targetCoords: {lat: number, lng: number}, nameHint?: string) => {
     try {
+        // 1. Proximity check for campuses first
+        const campus = QUICK_LOCATIONS.find(loc => {
+          const dist = Math.sqrt(Math.pow(loc.lat - targetCoords.lat, 2) + Math.pow(loc.lng - targetCoords.lng, 2));
+          return dist < 0.003; // Very close, approx 300m
+        });
+
+        if (campus) {
+          onLocationSelect({ address: campus.name, lat: targetCoords.lat, lng: targetCoords.lng });
+          setIsOpen(false);
+          return;
+        }
+
+        // 2. Fetch specific address from Nominatim
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${targetCoords.lat}&lon=${targetCoords.lng}`);
         const data = await res.json();
-        const addressParts = data.display_name.split(',');
-        const address = addressParts.length > 2 ? addressParts.slice(0, 3).join(',') : data.display_name;
-        onLocationSelect({ address, lat: targetCoords.lat, lng: targetCoords.lng });
-      } catch {
-        onLocationSelect({ address: "Selected Location", lat: targetCoords.lat, lng: targetCoords.lng });
+        
+        let finalName = "";
+        
+        if (nameHint) {
+          finalName = nameHint;
+        } else if (data.address) {
+          const addr = data.address;
+          // Priority for names
+          const mainPart = addr.amenity || addr.university || addr.building || addr.office || addr.railway || addr.railway_station || addr.stadium || addr.mall || addr.hospital || addr.aeroway || addr.tourism || addr.historic || addr.leisure;
+          const roadPart = addr.road || addr.street;
+          const areaPart = addr.suburb || addr.neighbourhood || addr.village || addr.town;
+          const cityPart = addr.city || addr.district || "Dehradun";
+
+          if (mainPart) {
+            finalName = `${mainPart}, ${areaPart || cityPart}`;
+          } else if (roadPart) {
+            finalName = `${roadPart}, ${areaPart || cityPart}`;
+          } else {
+             // Fallback to simple split if no specific keys
+             const addressParts = data.display_name.split(',');
+             finalName = addressParts.length > 2 ? addressParts.slice(0, 2).join(',') : data.display_name;
+          }
+        } else {
+          finalName = "Selected Location";
+        }
+
+        onLocationSelect({ address: finalName, lat: targetCoords.lat, lng: targetCoords.lng });
+      } catch (err) {
+        console.error("Reverse geocode failed", err);
+        onLocationSelect({ address: nameHint || "Selected Location", lat: targetCoords.lat, lng: targetCoords.lng });
       }
       setIsOpen(false);
   };
 
   const handleConfirm = async () => {
     if (coords) {
-      if (selectedName) {
-        // If we have a locked name (from Quick Select), use it directly
-        onLocationSelect({ address: selectedName, lat: coords.lat, lng: coords.lng });
-        setIsOpen(false);
-        return;
-      }
-
-      await handleConfirmDirectly(coords);
+      await handleConfirmDirectly(coords, selectedName || undefined);
     }
   };
 
