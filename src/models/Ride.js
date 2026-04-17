@@ -27,6 +27,17 @@ const rideRequestSchema = new mongoose.Schema({
   },
   onboardedAt: {
     type: Date
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
+  completedAt: {
+    type: Date
+  },
+  isCompletionPromptSent: {
+    type: Boolean,
+    default: false
   }
 }, { _id: true });
 

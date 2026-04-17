@@ -503,4 +503,57 @@ router.patch("/:rideId/requests/:requestId/onboard", async (req, res) => {
   }
 });
 
+// COMPLETE PASSENGER RIDE (By Passenger or Driver)
+router.patch("/:rideId/requests/:requestId/complete", async (req, res) => {
+  try {
+    const { rideId, requestId } = req.params;
+    const { userId } = req.body;
+
+    const ride = await Ride.findById(rideId);
+    if (!ride) return res.status(404).json({ message: "Ride not found" });
+
+    const request = ride.requests.id(requestId);
+    if (!request) return res.status(404).json({ message: "Request not found" });
+
+    // Ensure only the requester can confirm completion (or the driver)
+    if (String(request.requester) !== String(userId) && String(ride.createdBy) !== String(userId)) {
+      return res.status(403).json({ message: "Unauthorized to complete this ride" });
+    }
+
+    if (!request.isOnboarded) {
+      return res.status(400).json({ message: "Passenger must be onboarded before completion" });
+    }
+
+    if (request.isCompleted) {
+      return res.status(400).json({ message: "Ride is already marked as completed" });
+    }
+
+    request.isCompleted = true;
+    request.completedAt = new Date();
+
+    await ride.save();
+
+    // Notify the other party
+    const isDriver = String(ride.createdBy) === String(userId);
+    const targetUserId = isDriver ? request.requester : ride.createdBy;
+    
+    await createAndSendNotification({
+      userId: targetUserId,
+      type: "ride_ended", // Re-using ride_ended type
+      title: "Ride Completed! 🏁",
+      message: isDriver 
+        ? "The driver has marked your ride as completed. Hope you had a great trip!" 
+        : "The passenger has confirmed they have reached their destination.",
+      meta: { rideId: ride._id, requestId: request._id }
+    });
+
+    res.status(200).json({
+      message: "Ride completion confirmed successfully",
+      ride: await Ride.findById(ride._id).populate(RIDE_POPULATE)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error completing ride", error: error.message });
+  }
+});
+
 module.exports = router;

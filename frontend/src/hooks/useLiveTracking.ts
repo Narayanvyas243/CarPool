@@ -24,11 +24,18 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // In meters
 };
 
-export const useLiveTracking = (rideId: string, userId: string, role: 'driver' | 'passenger', active: boolean) => {
+export const useLiveTracking = (
+  rideId: string, 
+  userId: string, 
+  role: 'driver' | 'passenger', 
+  active: boolean,
+  destinationCoords?: { lat: number, lng: number } | null
+) => {
   const { socket } = useNotifications();
   const [myLocation, setMyLocation] = useState<Location | null>(null);
   const [otherLocation, setOtherLocation] = useState<Location | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
+  const [distanceToDestination, setDistanceToDestination] = useState<number | null>(null);
   const lastAlertThreshold = useRef<number | null>(null);
 
   // Join ride room
@@ -112,25 +119,34 @@ export const useLiveTracking = (rideId: string, userId: string, role: 'driver' |
 
   // Proximity Engine
   useEffect(() => {
-    if (myLocation && otherLocation) {
-        const d = calculateDistance(myLocation.lat, myLocation.lng, otherLocation.lat, otherLocation.lng);
-        setDistance(d);
+    if (myLocation) {
+        // Distance to other person
+        if (otherLocation) {
+          const d = calculateDistance(myLocation.lat, myLocation.lng, otherLocation.lat, otherLocation.lng);
+          setDistance(d);
 
-        // Alert Thresholds: 100m, 50m, 25m
-        const thresholds = [100, 50, 25];
-        for (const threshold of thresholds) {
-            if (d <= threshold && (lastAlertThreshold.current === null || lastAlertThreshold.current > threshold)) {
-                toast({
-                    title: `Proximity Alert: ${threshold}m 🚗`,
-                    description: `The ${otherLocation.role || 'other person'} is less than ${threshold} meters away!`,
-                    variant: "default",
-                });
-                lastAlertThreshold.current = threshold;
-                break;
-            }
+          // Alert Thresholds: 100m, 50m, 25m
+          const thresholds = [100, 50, 25];
+          for (const threshold of thresholds) {
+              if (d <= threshold && (lastAlertThreshold.current === null || lastAlertThreshold.current > threshold)) {
+                  toast({
+                      title: `Proximity Alert: ${threshold}m 🚗`,
+                      description: `The ${otherLocation.role || 'other person'} is less than ${threshold} meters away!`,
+                      variant: "default",
+                  });
+                  lastAlertThreshold.current = threshold;
+                  break;
+              }
+          }
+        }
+
+        // Distance to destination
+        if (destinationCoords?.lat && destinationCoords?.lng) {
+          const dToDest = calculateDistance(myLocation.lat, myLocation.lng, destinationCoords.lat, destinationCoords.lng);
+          setDistanceToDestination(dToDest);
         }
     }
-  }, [myLocation, otherLocation]);
+  }, [myLocation, otherLocation, destinationCoords]);
 
-  return { myLocation, otherLocation, distance };
+  return { myLocation, otherLocation, distance, distanceToDestination };
 };

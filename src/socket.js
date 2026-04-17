@@ -3,6 +3,22 @@ const { Server } = require("socket.io");
 let ioInstance = null;
 const userSocketMap = new Map();
 
+// Helper to calculate distance between two coordinates in meters (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth's radius in meters
+  const p1 = lat1 * Math.PI / 180;
+  const p2 = lat2 * Math.PI / 180;
+  const dp = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(dp / 2) * Math.sin(dp / 2) +
+    Math.cos(p1) * Math.cos(p2) *
+    Math.sin(dl / 2) * Math.sin(dl / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+};
+
 const initSocket = (httpServer) => {
   ioInstance = new Server(httpServer, {
     cors: {
@@ -28,7 +44,7 @@ const initSocket = (httpServer) => {
     });
 
     // Broadcast location to everyone else in the ride room
-    socket.on("location-update", ({ rideId, lat, lng, role }) => {
+    socket.on("location-update", async ({ rideId, lat, lng, role }) => {
       if (!rideId || !lat || !lng) return;
       const room = `ride:${rideId}`;
       
@@ -40,6 +56,75 @@ const initSocket = (httpServer) => {
         role, // 'driver' or 'passenger'
         timestamp: new Date()
       });
+
+      // --- NEW: Automatic Ride Completion Prompt Logic ---
+      try {
+        const Ride = require("./models/Ride");
+        const ride = await Ride.findById(rideId);
+        if (!ride || !ride.toCoords) return;
+
+        const distance = calculateDistance(lat, lng, ride.toCoords.lat, ride.toCoords.lng);
+        // If within 200m of destination
+        if (distance < 200) {
+          const { createAndSendNotification } = require("./services/notificationService");
+          
+          if (role === 'passenger') {
+            const request = ride.requests.find(r => String(r.requester) === String(socket.userId));
+            if (request && request.isOnboarded && !request.isCompleted && !request.isCompletionPromptSent) {
+              request.isCompletionPromptSent = true;
+              await ride.save();
+
+              const promptPayload = {
+                type: "ride_completion_verify",
+                title: "Destination Reached? 🏁",
+                message: "It looks like you've reached the destination. Has the passenger completed their ride?",
+                meta: { rideId: ride._id, requestId: request._id }
+              };
+
+              await createAndSendNotification({ ...promptPayload, userId: ride.createdBy });
+              await createAndSendNotification({ ...promptPayload, userId: request.requester });
+
+              ioInstance.to(room).emit("ride:confirm-completion", {
+                rideId: ride._id,
+                requestId: request._id,
+                passengerId: request.requester
+              });
+
+              console.log(`[Socket] Completion prompt triggered (by passenger) for ride ${rideId}, passenger ${socket.userId}`);
+            }
+          } else if (role === 'driver') {
+            // If the driver reaches the destination, trigger for all onboarded passengers
+            let updated = false;
+            for (const request of ride.requests) {
+              if (request.isOnboarded && !request.isCompleted && !request.isCompletionPromptSent) {
+                request.isCompletionPromptSent = true;
+                updated = true;
+
+                const promptPayload = {
+                  type: "ride_completion_verify",
+                  title: "Destination Reached? 🏁",
+                  message: "It looks like you've reached the destination. Has the passenger completed their ride?",
+                  meta: { rideId: ride._id, requestId: request._id }
+                };
+
+                await createAndSendNotification({ ...promptPayload, userId: ride.createdBy });
+                await createAndSendNotification({ ...promptPayload, userId: request.requester });
+
+                ioInstance.to(room).emit("ride:confirm-completion", {
+                  rideId: ride._id,
+                  requestId: request._id,
+                  passengerId: request.requester
+                });
+
+                console.log(`[Socket] Completion prompt triggered (by driver) for ride ${rideId}, passenger ${request.requester}`);
+              }
+            }
+            if (updated) await ride.save();
+          }
+        }
+      } catch (err) {
+        console.error("[Socket] Error in completion prompt logic:", err);
+      }
     });
 
     socket.on("disconnect", () => {

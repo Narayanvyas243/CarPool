@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import RideMap from "@/components/RideMap";
 import { useLiveTracking } from "../hooks/useLiveTracking";
+import { useNotifications } from "../context/NotificationContext";
 
 const RideDetails = () => {
   const { id } = useParams();
@@ -49,6 +50,11 @@ const RideDetails = () => {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isConfirmingOnboard, setIsConfirmingOnboard] = useState(false);
+  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
+  const [isConfirmingCompletion, setIsConfirmingCompletion] = useState(false);
+  const [autoPromptRequestId, setAutoPromptRequestId] = useState<string | null>(null);
+  const [autoPromptPassengerName, setAutoPromptPassengerName] = useState<string | null>(null);
+  const { socket } = useNotifications();
 
   useEffect(() => {
     fetch(getApiUrl(`/api/rides/${id}`))
@@ -143,11 +149,12 @@ const RideDetails = () => {
   const isTrackingActive = !!(role && !isAlreadyOnboarded);
 
   // Hook for live tracking
-  const { myLocation, otherLocation, distance } = useLiveTracking(
+  const { myLocation, otherLocation, distance, distanceToDestination } = useLiveTracking(
     id || "", 
     user?.id || "", 
     role as any, 
-    isTrackingActive
+    isTrackingActive,
+    ride?.toCoords
   );
 
   // Show onboarding modal when close (< 15m) and not yet onboarded
@@ -156,6 +163,52 @@ const RideDetails = () => {
       setIsOnboardingOpen(true);
     }
   }, [distance, isTrackingActive, isOwner]);
+
+  // Listen for automatic completion prompts from server
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAutoCompletion = (data: any) => {
+      console.log("[RideDetails] Received auto-completion prompt:", data);
+      
+      // If I'm the driver OR if I'm the specific passenger mentioned
+      const isMePassenger = user?.id === data.passengerId;
+      const amIDriver = isOwner;
+
+      if (isMePassenger || amIDriver) {
+        setAutoPromptRequestId(data.requestId);
+        
+        // Try to find the passenger name for better UI
+        const passenger = passengers.find(p => p.requesterId === data.passengerId);
+        if (passenger) setAutoPromptPassengerName(passenger.name);
+        
+        setIsCompletionDialogOpen(true);
+      }
+    };
+
+    socket.on("ride:confirm-completion", handleAutoCompletion);
+
+    return () => {
+      socket.off("ride:confirm-completion", handleAutoCompletion);
+    };
+  }, [socket, user, isOwner, passengers]);
+
+  // Keep manual distance-based trigger as a fallback (for passengers only)
+  useEffect(() => {
+    const isActuallyOnboarded = myRequest?.isOnboarded;
+    const isAlreadyCompleted = myRequest?.isCompleted;
+
+    if (
+      isActuallyOnboarded && 
+      !isAlreadyCompleted && 
+      distanceToDestination !== null && 
+      distanceToDestination < 50 &&
+      !isOwner &&
+      !isCompletionDialogOpen // Don't re-trigger if already open from socket
+    ) {
+      setIsCompletionDialogOpen(true);
+    }
+  }, [distanceToDestination, myRequest, isOwner, isCompletionDialogOpen]);
 
   if (isLoading) {
     return (
@@ -186,11 +239,15 @@ const RideDetails = () => {
   const passengers = (ride.requests || [])
     .filter((req: any) => req.status === "accepted")
     .map((req: any) => ({
+      _id: req._id,
       name: req.requester?.name || "Passenger",
       avatar: "",
       phone: req.requester?.phone || "",
       role: req.requester?.role || "student",
-      email: req.requester?.email || ""
+      email: req.requester?.email || "",
+      isOnboarded: req.isOnboarded,
+      isCompleted: req.isCompleted,
+      requesterId: req.requester?._id
     }));
 
   const pendingRequests = (ride.requests || [])
@@ -223,6 +280,37 @@ const RideDetails = () => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsConfirmingOnboard(false);
+    }
+  };
+
+  const handleConfirmCompletion = async (reqId?: string) => {
+    if (!user) return;
+    const requestId = reqId || autoPromptRequestId || myRequest?._id;
+    if (!requestId) return;
+
+    setIsConfirmingCompletion(true);
+    try {
+      const res = await fetch(getApiUrl(`/api/rides/${id}/requests/${requestId}/complete`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to confirm completion");
+      
+      toast({ 
+        title: "Ride Completed! 🏁", 
+        description: isOwner ? "Passenger ride marked as completed." : "Hope you had a safe journey!" 
+      });
+      setIsCompletionDialogOpen(false);
+
+      // Refresh ride data
+      const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
+      setRide(await upRes.json());
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsConfirmingCompletion(false);
     }
   };
 
@@ -433,7 +521,12 @@ const RideDetails = () => {
                         {(passenger.name || "P").split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                    {isOwner && passenger.phone && (
+                    {passenger.isCompleted && (
+                      <div className="absolute -top-1 -right-1 bg-success text-white rounded-full p-0.5 shadow-lg border-2 border-background animate-fade-in">
+                        <Check className="h-2.5 w-2.5" />
+                      </div>
+                    )}
+                    {isOwner && passenger.phone && !passenger.isCompleted && (
                       <div 
                         className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 shadow-soft"
                       >
@@ -441,9 +534,14 @@ const RideDetails = () => {
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {passenger.name.split(' ')[0]}
-                  </span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      {passenger.name.split(' ')[0]}
+                    </span>
+                    {passenger.isCompleted && (
+                      <span className="text-[8px] text-success font-bold uppercase tracking-tighter">Done</span>
+                    )}
+                  </div>
                 </div>
               ))}
               {Array.from({ length: Math.max(0, ride.seatsAvailable || 0) }).map((_, i) => (
@@ -677,6 +775,130 @@ const RideDetails = () => {
                {isConfirmingOnboard ? "Confirming..." : "Yes, I'm Onboard"}
              </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Completion Dialog */}
+      <Dialog open={isCompletionDialogOpen} onOpenChange={setIsCompletionDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Reached Destination? 🏁</DialogTitle>
+            <DialogDescription>
+              {isOwner 
+                ? `It looks like you've reached the destination for ${autoPromptPassengerName || 'a passenger'}. Please confirm if they have completed their ride.`
+                : "It looks like you've reached your drop-off point. Please confirm that you have safely exited the vehicle."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 flex flex-col items-center gap-4">
+             <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center animate-pulse">
+                <MapPin className="h-10 w-10 text-success" />
+             </div>
+             <div className="text-center space-y-1">
+               <p className="font-semibold text-foreground">Arrival Detected</p>
+               <p className="text-xs text-muted-foreground">You are within 50 meters of {ride.toLocation}</p>
+             </div>
+          </div>
+          <div className="flex gap-3">
+             <Button variant="outline" className="flex-1" onClick={() => {
+                setIsCompletionDialogOpen(false);
+                setAutoPromptRequestId(null);
+             }}>Not yet</Button>
+             <Button className="flex-1 bg-success hover:bg-success/90 shadow-lg shadow-success/20" onClick={() => handleConfirmCompletion()} disabled={isConfirmingCompletion}>
+               {isConfirmingCompletion ? "Completing..." : "Yes, I've Arrived"}
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Completion Action in Profile View for Owner */}
+      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+        <DialogContent className="sm:max-w-[350px] p-0 overflow-hidden border-0 shadow-elevated">
+          {selectedPassenger && (
+            <div className="animate-fade-in">
+              <div className="bg-gradient-primary pt-8 pb-12 px-6 text-center">
+                <Avatar className="h-20 w-20 mx-auto ring-4 ring-background/20 shadow-lg">
+                  <AvatarFallback className="bg-background text-primary text-xl font-bold">
+                    {(selectedPassenger.name || "P").split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="mt-3 text-primary-foreground">
+                  <h3 className="text-xl font-bold">{selectedPassenger.name}</h3>
+                  <div className="flex items-center justify-center gap-1.5 mt-1 opacity-90">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/20 uppercase tracking-wider">
+                      {selectedPassenger.role}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="px-6 py-6 -mt-6 bg-background rounded-t-[30px] space-y-6">
+                {/* Status Section */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <BadgeCheck className={`h-5 w-5 ${selectedPassenger.isOnboarded ? 'text-success' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-bold text-foreground">{selectedPassenger.isOnboarded ? 'Onboard' : 'Waiting'}</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-200" />
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedPassenger.isCompleted ? 'bg-success' : 'bg-warning'}`} />
+                    <span className="text-xs font-bold text-foreground">{selectedPassenger.isCompleted ? 'Completed' : 'In Progress'}</span>
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 rounded-xl bg-primary/10">
+                      <Phone className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Phone Number</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">{selectedPassenger.phone || "Not provided"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 pt-2">
+                   {isOwner && selectedPassenger.isOnboarded && !selectedPassenger.isCompleted && (
+                     <Button 
+                       className="w-full bg-primary hover:bg-primary/90 h-11"
+                       onClick={() => {
+                         handleConfirmCompletion(selectedPassenger._id);
+                         setIsProfileOpen(false);
+                       }}
+                       disabled={isConfirmingCompletion}
+                     >
+                       {isConfirmingCompletion ? "Processing..." : "Complete Passenger Ride"}
+                     </Button>
+                   )}
+                   <div className="grid grid-cols-2 gap-3">
+                    {selectedPassenger.phone && (
+                      <Button 
+                        variant="outline"
+                        className="w-full border-success text-success h-11"
+                        onClick={() => window.open(`tel:${selectedPassenger.phone}`)}
+                      >
+                        <Phone className="h-4 w-4 mr-2" /> Call
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-11 border-primary text-primary"
+                      onClick={() => {
+                        toast({ title: "WhatsApp integration", description: "Coming soon!" });
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" /> Message
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>
