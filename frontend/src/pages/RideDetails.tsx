@@ -145,6 +145,7 @@ const RideDetails = () => {
   const isAlreadyOnboarded = myRequest?.isOnboarded;
 
   // Determine role for tracking
+  const role = isOwner ? 'driver' : (hasBeenAccepted ? 'passenger' : null);
   const isTrackingActive = !!(role && !isAlreadyOnboarded);
   
   // Memoize map locations to prevent RideMap from re-initializing unnecessarily

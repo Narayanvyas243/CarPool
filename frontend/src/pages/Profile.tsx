@@ -300,7 +300,13 @@ const Profile = () => {
                 type: new Date(r.time) < new Date() ? 'Completed' : 'Offered' 
               }))
             ]
-              .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+              .filter(r => r && r.time) // Ensure ride has a time field
+              .sort((a, b) => {
+                const dateA = new Date(a.time).getTime();
+                const dateB = new Date(b.time).getTime();
+                if (isNaN(dateA) || isNaN(dateB)) return 0;
+                return dateB - dateA;
+              })
               .slice(0, 4)
               .map((ride: any, i) => (
               <Card 
