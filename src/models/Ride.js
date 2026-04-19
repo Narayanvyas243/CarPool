@@ -12,6 +12,12 @@ const rideRequestSchema = new mongoose.Schema({
     default: 1,
     min: 1
   },
+  pickupLocation: {
+    type: String
+  },
+  dropoffLocation: {
+    type: String
+  },
   status: {
     type: String,
     enum: ["pending", "accepted", "rejected"],

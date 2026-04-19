@@ -61,6 +61,10 @@ const RideDetails = () => {
   const [feedbackTargetUserId, setFeedbackTargetUserId] = useState<string | null>(null);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
+  const [isMidwayDialogOpen, setIsMidwayDialogOpen] = useState(false);
+  const [pickupText, setPickupText] = useState("");
+  const [dropoffText, setDropoffText] = useState("");
+
   const { socket } = useNotifications();
 
   useEffect(() => {
@@ -87,7 +91,12 @@ const RideDetails = () => {
       const res = await fetch(getApiUrl(`/api/rides/${id}/request`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requesterId: user.id, seatsRequested: 1 })
+        body: JSON.stringify({ 
+          requesterId: user.id, 
+          seatsRequested: 1,
+          pickupLocation: pickupText || ride.fromLocation,
+          dropoffLocation: dropoffText || ride.toLocation
+        })
       });
       
       const data = await res.json();
@@ -97,6 +106,8 @@ const RideDetails = () => {
         title: "Ride Requested! 🎉",
         description: "Your request has been sent to the driver.",
       });
+
+      setIsMidwayDialogOpen(false);
 
       // Refresh ride data
       const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
@@ -694,7 +705,11 @@ const RideDetails = () => {
           <Button 
             className="w-full h-12" 
             size="lg"
-            onClick={handleJoinRide}
+            onClick={() => {
+              setPickupText(ride.fromLocation);
+              setDropoffText(ride.toLocation);
+              setIsMidwayDialogOpen(true);
+            }}
             disabled={isJoining || ride.seatsAvailable === 0 || hasRequested || hasBeenAccepted}
           >
             {isJoining ? (
@@ -803,6 +818,44 @@ const RideDetails = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Midway Join Dialog */}
+      <Dialog open={isMidwayDialogOpen} onOpenChange={setIsMidwayDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Join Request</DialogTitle>
+            <DialogDescription>
+              Adjust your pickup and drop-off points if you want to join midway. The driver will see your custom points.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+             <div>
+               <label className="text-xs font-bold text-muted-foreground uppercase opacity-80 mb-1 block">Pickup Point</label>
+               <input 
+                 className="w-full p-2.5 text-sm rounded-lg border border-input bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/50"
+                 value={pickupText}
+                 onChange={(e) => setPickupText(e.target.value)}
+                 placeholder="E.g., Prem Nagar"
+               />
+             </div>
+             <div>
+               <label className="text-xs font-bold text-muted-foreground uppercase opacity-80 mb-1 block">Drop-off Point</label>
+               <input 
+                 className="w-full p-2.5 text-sm rounded-lg border border-input bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/50"
+                 value={dropoffText}
+                 onChange={(e) => setDropoffText(e.target.value)}
+                 placeholder="E.g., UPES Bidholi"
+               />
+             </div>
+          </div>
+          <div className="flex gap-3">
+             <Button variant="outline" className="flex-1" onClick={() => setIsMidwayDialogOpen(false)}>Cancel</Button>
+             <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleJoinRide} disabled={isJoining || !pickupText || !dropoffText}>
+               {isJoining ? "Sending..." : "Send Request"}
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Onboarding Dialog */}
       <Dialog open={isOnboardingOpen} onOpenChange={setIsOnboardingOpen}>
         <DialogContent className="sm:max-w-[400px]">

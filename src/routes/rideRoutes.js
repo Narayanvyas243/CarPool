@@ -165,7 +165,9 @@ router.get("/dashboard/:userId", async (req, res) => {
           time: ride.time,
           seatsRequested: request.seatsRequested,
           requestId: request._id,
-          requester: request.requester
+          requester: request.requester,
+          pickupLocation: request.pickupLocation,
+          dropoffLocation: request.dropoffLocation
         }))
     );
 
@@ -261,7 +263,7 @@ router.put("/:id", async (req, res) => {
 // REQUEST A SEAT ON A RIDE
 router.post("/:rideId/request", async (req, res) => {
   try {
-    const { requesterId, seatsRequested = 1 } = req.body;
+    const { requesterId, seatsRequested = 1, pickupLocation, dropoffLocation } = req.body;
     const { rideId } = req.params;
 
     if (!requesterId) {
@@ -296,7 +298,9 @@ router.post("/:rideId/request", async (req, res) => {
 
     ride.requests.push({
       requester: requesterId,
-      seatsRequested: Number(seatsRequested) || 1
+      seatsRequested: Number(seatsRequested) || 1,
+      pickupLocation,
+      dropoffLocation
     });
 
     await ride.save();

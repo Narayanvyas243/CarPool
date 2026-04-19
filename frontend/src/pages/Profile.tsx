@@ -261,9 +261,16 @@ const Profile = () => {
                         <p className="text-xs font-bold text-primary">{req.seatsRequested} Seat(s)</p>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {req.fromLocation} → {req.toLocation}
+                    <div className="flex flex-col gap-1 mb-3">
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{req.pickupLocation || req.fromLocation} → {req.dropoffLocation || req.toLocation}</span>
+                      </div>
+                      {(req.pickupLocation !== req.fromLocation || req.dropoffLocation !== req.toLocation) && (
+                        <div className="ml-4">
+                          <span className="text-[9px] font-bold bg-accent/10 text-accent px-1.5 py-0.5 rounded uppercase tracking-wider">Midway Join</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <Button 
