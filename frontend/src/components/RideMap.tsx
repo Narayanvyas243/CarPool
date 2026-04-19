@@ -252,14 +252,8 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
         }
     });
 
-    if (markers.length > 0 && !isLoading) {
-        const markerPoints = markers.map(m => [m.lat, m.lng]);
-        const allPoints = [...markerPoints];
-        if (from.lat && from.lng) allPoints.push([from.lat, from.lng]);
-        if (to.lat && to.lng) allPoints.push([to.lat, to.lng]);
-        
-        mapInstance.current.fitBounds(L.latLngBounds(allPoints as [number, number][]), { padding: [50, 50] });
-    }
+    // We intentionally removed fitBounds here to prevent the map from snapping
+    // back aggressively when live tracking markers update. The initial route fitBounds is sufficient.
   }, [markers, isLoading]);
 
   if (!from.name || !to.name) return null;

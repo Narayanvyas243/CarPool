@@ -48,6 +48,8 @@ export const useLiveTracking = (
   // Handle Geolocation
   useEffect(() => {
     let watchId: number;
+    const hasShownErrorToast = { current: false };
+
     const startTracking = () => {
       if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(
@@ -63,20 +65,23 @@ export const useLiveTracking = (
           },
           (error) => {
             console.error("Geolocation error:", error);
-            let description = "Failed to get your location.";
-            if (error.code === 1) {
-              description = "Location permission denied. Please allow access to see yourself on the map.";
-            } else if (error.code === 2) {
-              description = "Location information is unavailable.";
-            } else if (error.code === 3) {
-              description = "Location request timed out.";
+            if (!hasShownErrorToast.current) {
+                let description = "Failed to get your location.";
+                if (error.code === 1) {
+                  description = "Location permission denied. Please allow access to see yourself on the map.";
+                } else if (error.code === 2) {
+                  description = "Location information is unavailable.";
+                } else if (error.code === 3) {
+                  description = "Location request timed out.";
+                }
+                
+                toast({
+                  title: "Location Unreachable",
+                  description,
+                  variant: "destructive",
+                });
+                hasShownErrorToast.current = true;
             }
-            
-            toast({
-              title: "Location Unreachable",
-              description,
-              variant: "destructive",
-            });
           },
           { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
         );
