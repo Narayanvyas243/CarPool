@@ -553,7 +553,25 @@ const RideDetails = () => {
                 >
                   <Phone className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="rounded-full">
+                <Button 
+                  variant="outline" 
+                   size="icon" 
+                   className="rounded-full"
+                   onClick={() => {
+                     if (hasBeenAccepted && ride.createdBy?.phone) {
+                       const phone = ride.createdBy.phone.replace(/\D/g, '').replace(/^91/, '');
+                       window.open(`https://wa.me/91${phone}`, "_blank");
+                     } else if (isOwner) {
+                       toast({ title: "My Profile", description: "This is your ride!" });
+                     } else {
+                       toast({ 
+                         title: "Contact Restricted", 
+                         description: "Contact details are revealed once your request is accepted.",
+                         variant: "destructive"
+                       });
+                     }
+                   }}
+                 >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
               </div>
@@ -807,7 +825,12 @@ const RideDetails = () => {
                     variant="outline" 
                     className="w-full h-11 border-primary text-primary"
                     onClick={() => {
-                      toast({ title: "WhatsApp integration", description: "Coming soon!" });
+                      if (selectedPassenger?.phone) {
+                        const phone = selectedPassenger.phone.replace(/\D/g, '').replace(/^91/, '');
+                        window.open(`https://wa.me/91${phone}`, "_blank");
+                      } else {
+                        toast({ title: "Not Available", description: "Phone number not provided yet." });
+                      }
                     }}
                   >
                     <MessageCircle className="h-4 w-4 mr-2" /> Message
@@ -1044,7 +1067,12 @@ const RideDetails = () => {
                       variant="outline" 
                       className="w-full h-11 border-primary text-primary"
                       onClick={() => {
-                        toast({ title: "WhatsApp integration", description: "Coming soon!" });
+                        if (selectedPassenger?.phone) {
+                          const phone = selectedPassenger.phone.replace(/\D/g, '').replace(/^91/, '');
+                          window.open(`https://wa.me/91${phone}`, "_blank");
+                        } else {
+                          toast({ title: "Not Available", description: "Phone number not provided yet." });
+                        }
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-2" /> Message
