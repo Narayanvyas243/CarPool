@@ -390,6 +390,15 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   // Helper to extract a human-readable name from Nominatim data
   const extractLocationName = (data: any, lat: number, lng: number): string => {
+    // Override with strict proximity check to fix OSM mismatches for universities
+    // Using 0.01 threshold which is roughly 1km radius
+    const nearbyCampus = QUICK_LOCATIONS.find(loc => {
+      const dist = Math.sqrt(Math.pow(loc.lat - lat, 2) + Math.pow(loc.lng - lng, 2));
+      return dist < 0.01;
+    });
+
+    if (nearbyCampus) return nearbyCampus.name;
+
     if (!data) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     
     if (data.address) {
