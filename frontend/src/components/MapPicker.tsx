@@ -14,7 +14,7 @@ import { MapPin, Search, Loader2, Navigation, Map as MapIcon, X, AlertTriangle }
 
 // Pre-defined locations for quick selection
 const QUICK_LOCATIONS = [
-  { name: "UPES Bidholi", lat: 30.4033, lng: 77.9669 },
+  { name: "UPES Bidholi", lat: 30.4161, lng: 77.9668 },
   { name: "UPES Kandoli", lat: 30.3853, lng: 77.9657 },
   { name: "Clock Tower", lat: 30.3244, lng: 78.0411 },
   { name: "ISBT Dehradun", lat: 30.2856, lng: 77.9981 },

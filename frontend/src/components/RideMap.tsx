@@ -96,8 +96,8 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
       const findInDictionary = (name: string) => {
         const lower = name.toLowerCase();
         const COMMON_LOCATIONS: Record<string, { lat: number; lng: number }> = {
-            'bidholi': { lat: 30.4033, lng: 77.9669 },
-            'kandoli': { lat: 30.412, lng: 77.962 },
+            'bidholi': { lat: 30.4161, lng: 77.9668 },
+            'kandoli': { lat: 30.3853, lng: 77.9657 },
             'prem nagar': { lat: 30.339, lng: 77.966 },
             'isbt': { lat: 30.286, lng: 77.996 },
             'clock tower': { lat: 30.324, lng: 78.041 },
