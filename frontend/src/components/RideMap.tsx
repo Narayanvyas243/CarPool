@@ -326,28 +326,23 @@ const RideMap = ({ from, to, markers }: RideMapProps) => {
                     console.log("[RideMap] User located at:", latitude, longitude);
                     
                     if (mapInstance.current) {
-                      mapInstance.current.setView([latitude, longitude], 16);
-                      
-                      // Small circle marker for user location if not already in markers
-                      const L = (window as any).L;
-                      L.circleMarker([latitude, longitude], {
-                        radius: 8,
-                        fillColor: '#3b82f6',
-                        color: '#fff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
-                      }).addTo(mapInstance.current).bindPopup("You are here").openPopup();
+                      // Use flyTo for a smooth, obvious animation to the user's location
+                      mapInstance.current.flyTo([latitude, longitude], 17, {
+                        animate: true,
+                        duration: 1.5
+                      });
 
                       setTimeout(() => {
-                        mapInstance.current.invalidateSize();
-                      }, 100);
+                        if (mapInstance.current) {
+                           mapInstance.current.invalidateSize();
+                        }
+                      }, 1500);
                     }
                     
                     setIsLocating(false);
                     toast({
                       title: "Location Found",
-                      description: "Map centered on your position."
+                      description: "Zoomed to your current position."
                     });
                   },
                   (err) => {
