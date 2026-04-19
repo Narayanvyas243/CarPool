@@ -194,7 +194,28 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    // --- Feedback / Rating Calculation (5-Day Delay logic) ---
+    const Feedback = require("../models/Feedback");
+    // Only include feedbacks created more than 5 days ago to protect anonymity
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const validFeedbacks = await Feedback.find({
+      toUser: user._id,
+      createdAt: { $lte: fiveDaysAgo }
+    });
+
+    let rating = 0;
+    if (validFeedbacks.length > 0) {
+      const sum = validFeedbacks.reduce((acc, curr) => acc + curr.rating, 0);
+      rating = Number((sum / validFeedbacks.length).toFixed(1));
+    }
+
+    const userObj = user.toObject();
+    
+    res.status(200).json({
+      ...userObj,
+      currentRating: rating,
+      reviewCount: validFeedbacks.length
+    });
   } catch (error) {
     res.status(500).json({
       message: "Error fetching user details",

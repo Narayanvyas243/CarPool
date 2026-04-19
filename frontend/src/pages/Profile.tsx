@@ -161,8 +161,13 @@ const Profile = () => {
                 {user?.role === "student" ? "Student" : "Faculty"}
               </div>
               <div className="flex items-center gap-1 bg-warning/10 px-2.5 py-1 rounded-full border border-warning/20">
-                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                <span className="text-[10px] font-bold text-warning uppercase">5.0 Rating</span>
+                <Star className={`h-3.5 w-3.5 ${profileData?.currentRating > 0 ? 'fill-warning text-warning' : 'text-warning/50'}`} />
+                <span className="text-[10px] font-bold text-warning uppercase">
+                  {profileData?.currentRating > 0 ? `${profileData.currentRating.toFixed(1)} Rating` : 'NEW'}
+                </span>
+                {profileData?.reviewCount > 0 && (
+                  <span className="text-[9px] text-warning/70 ml-1">({profileData.reviewCount})</span>
+                )}
               </div>
             </div>
             {/* Deployment Verification Anchor */}

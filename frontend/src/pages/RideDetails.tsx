@@ -54,6 +54,13 @@ const RideDetails = () => {
   const [isConfirmingCompletion, setIsConfirmingCompletion] = useState(false);
   const [autoPromptRequestId, setAutoPromptRequestId] = useState<string | null>(null);
   const [autoPromptPassengerName, setAutoPromptPassengerName] = useState<string | null>(null);
+  
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackTargetUserId, setFeedbackTargetUserId] = useState<string | null>(null);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
   const { socket } = useNotifications();
 
   useEffect(() => {
@@ -299,7 +306,7 @@ const RideDetails = () => {
     }
   };
 
-  const handleConfirmCompletion = async (reqId?: string) => {
+  const handleConfirmCompletion = async (reqId?: string, forcePassengerId?: string) => {
     if (!user) return;
     const requestId = reqId || autoPromptRequestId || myRequest?._id;
     if (!requestId) return;
@@ -320,13 +327,58 @@ const RideDetails = () => {
       });
       setIsCompletionDialogOpen(false);
 
+      // Trigger Feedback Dialog
+      let targetId = forcePassengerId;
+      if (!targetId) {
+        if (isOwner) {
+          const req = data.ride.requests.find((r: any) => r._id === requestId);
+          targetId = req?.requester?._id || req?.requester;
+        } else {
+          targetId = data.ride.createdBy?._id || data.ride.createdBy;
+        }
+      }
+      
+      if (targetId) {
+        setFeedbackTargetUserId(targetId);
+        setIsFeedbackDialogOpen(true);
+      }
+
       // Refresh ride data
-      const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
-      setRide(await upRes.json());
+      setRide(data.ride);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsConfirmingCompletion(false);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!user || !feedbackTargetUserId || feedbackRating === 0) return;
+    setIsSubmittingFeedback(true);
+    try {
+      const res = await fetch(getApiUrl("/api/feedbacks"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rideId: ride._id,
+          fromUserId: user.id,
+          toUserId: feedbackTargetUserId,
+          rating: feedbackRating,
+          comment: feedbackComment
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to submit feedback");
+      
+      toast({ title: "Feedback submitted", description: "Thanks for securely sharing your feedback!" });
+      setIsFeedbackDialogOpen(false);
+      setFeedbackRating(0);
+      setFeedbackComment("");
+    } catch(err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+      if (err.message.includes("already submitted")) setIsFeedbackDialogOpen(false);
+    } finally {
+      setIsSubmittingFeedback(false);
     }
   };
 
@@ -682,18 +734,9 @@ const RideDetails = () => {
               </div>
               
               <div className="px-6 py-6 -mt-6 bg-background rounded-t-[30px] space-y-6">
-                {/* Rating */}
-                <div className="flex items-center justify-center gap-6 py-4 border-b border-border">
+                <div className="flex items-center justify-center py-4 border-b border-border">
                   <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-warning">
-                      <Star className="h-4 w-4 fill-warning" />
-                      <span className="font-bold text-lg">5.0</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground uppercase">Rating</p>
-                  </div>
-                  <div className="h-8 w-px bg-border" />
-                  <div className="text-center">
-                    <div className="font-bold text-lg">Verified</div>
+                    <div className="font-bold text-lg text-success">Verified</div>
                     <p className="text-[10px] text-muted-foreground uppercase">Status</p>
                   </div>
                 </div>
@@ -819,6 +862,57 @@ const RideDetails = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Feedback Dialog */}
+      <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Rate Your Experience ⭐</DialogTitle>
+            <DialogDescription>
+              Your feedback helps keep the community safe. For privacy, your rating won't appear on their profile for 5 days.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 flex flex-col items-center gap-4">
+             <div className="flex gap-2">
+               {[1, 2, 3, 4, 5].map((star) => (
+                 <button
+                   key={star}
+                   title={`Rate ${star} stars`}
+                   onClick={() => setFeedbackRating(star)}
+                   className={`p-2 rounded-full transition-all ${
+                     feedbackRating >= star 
+                      ? 'text-warning hover:scale-110 drop-shadow-md' 
+                      : 'text-muted hover:text-warning/50 hover:scale-105'
+                   }`}
+                 >
+                   <Star className={`h-8 w-8 ${feedbackRating >= star ? 'fill-warning' : ''}`} />
+                 </button>
+               ))}
+             </div>
+             
+             <div className="w-full mt-2">
+               <label className="text-xs font-bold text-muted-foreground uppercase opacity-80 mb-1 block">Comment (Optional)</label>
+               <textarea 
+                 className="w-full min-h-[80px] p-3 text-sm rounded-xl border border-input bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                 placeholder="How was the ride?"
+                 value={feedbackComment}
+                 onChange={(e) => setFeedbackComment(e.target.value)}
+                 maxLength={200}
+               />
+             </div>
+          </div>
+          <div className="flex gap-3">
+             <Button variant="outline" className="flex-1" onClick={() => setIsFeedbackDialogOpen(false)}>Skip for Now</Button>
+             <Button 
+               className="flex-1 bg-primary hover:bg-primary/90" 
+               onClick={handleSubmitFeedback} 
+               disabled={isSubmittingFeedback || feedbackRating === 0}
+             >
+               {isSubmittingFeedback ? "Submitting..." : "Submit Rating"}
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Manual Completion Action in Profile View for Owner */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent className="sm:max-w-[350px] p-0 overflow-hidden border-0 shadow-elevated">
@@ -875,7 +969,7 @@ const RideDetails = () => {
                      <Button 
                        className="w-full bg-primary hover:bg-primary/90 h-11"
                        onClick={() => {
-                         handleConfirmCompletion(selectedPassenger._id);
+                         handleConfirmCompletion(selectedPassenger._id, selectedPassenger.requesterId);
                          setIsProfileOpen(false);
                        }}
                        disabled={isConfirmingCompletion}
