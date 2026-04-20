@@ -14,6 +14,7 @@ import Notifications from "./pages/Notifications";
 import RideHistory from "./pages/RideHistory";
 import Settings from "./pages/Settings";
 import ForgotPassword from "./pages/ForgotPassword";
+import Safety from "./pages/Safety";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><RideHistory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/safety" element={<ProtectedRoute><Safety /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
