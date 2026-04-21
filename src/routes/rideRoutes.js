@@ -5,6 +5,7 @@ const {
   createAndSendNotification,
   markNotificationsByMetaAsRead
 } = require("../services/notificationService");
+const { getIO } = require("../socket");
 const {
   scheduleRideLifecycleNotifications,
   clearRideTimers
@@ -550,6 +551,17 @@ router.patch("/:rideId/requests/:requestId/complete", async (req, res) => {
         : "The passenger has confirmed they have reached their destination.",
       meta: { rideId: ride._id, requestId: request._id }
     });
+
+    // Notify all participants in the ride room to sync UI
+    const io = getIO();
+    if (io) {
+      io.to(`ride:${rideId}`).emit("ride:completed", {
+        rideId: ride._id,
+        requestId: request._id,
+        completedBy: userId,
+        passengerId: request.requester
+      });
+    }
 
     res.status(200).json({
       message: "Ride completion confirmed successfully",

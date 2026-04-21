@@ -80,53 +80,61 @@ const initSocket = (httpServer) => {
           
           if (role === 'passenger') {
             const request = ride.requests.find(r => String(r.requester) === String(socket.userId));
-            if (request && request.isOnboarded && !request.isCompleted && !request.isCompletionPromptSent) {
-              request.isCompletionPromptSent = true;
-              await ride.save();
+            if (request && request.isOnboarded && !request.isCompleted) {
+              // We only send the persistent notification once (isCompletionPromptSent)
+              // but we can emit the socket event multiple times (throttled)
+              if (!request.isCompletionPromptSent) {
+                request.isCompletionPromptSent = true;
+                await ride.save();
 
-              const promptPayload = {
-                type: "ride_completion_verify",
-                title: "Destination Reached? 🏁",
-                message: "It looks like you've reached the destination. Has the passenger completed their ride?",
-                meta: { rideId: ride._id, requestId: request._id }
-              };
+                const promptPayload = {
+                  type: "ride_completion_verify",
+                  title: "Destination Reached? 🏁",
+                  message: "It looks like you've reached the destination. Has your ride been completed?",
+                  meta: { rideId: ride._id, requestId: request._id }
+                };
 
-              await createAndSendNotification({ ...promptPayload, userId: ride.createdBy });
-              await createAndSendNotification({ ...promptPayload, userId: request.requester });
+                await createAndSendNotification({ ...promptPayload, userId: ride.createdBy });
+                await createAndSendNotification({ ...promptPayload, userId: request.requester });
+              }
 
+              // Always emit socket event (throttled by 10s above) to ensure popup shows
               ioInstance.to(room).emit("ride:confirm-completion", {
                 rideId: ride._id,
                 requestId: request._id,
                 passengerId: request.requester
               });
 
-              console.log(`[Socket] Completion prompt triggered (by passenger) for ride ${rideId}, passenger ${socket.userId}`);
+              console.log(`[Socket] Completion prompt emitted (by passenger) for ride ${rideId}, passenger ${socket.userId}`);
             }
           } else if (role === 'driver') {
             // If the driver reaches the destination, trigger for all onboarded passengers
             let updated = false;
             for (const request of ride.requests) {
-              if (request.isOnboarded && !request.isCompleted && !request.isCompletionPromptSent) {
-                request.isCompletionPromptSent = true;
-                updated = true;
+              if (request.isOnboarded && !request.isCompleted) {
+                 if (!request.isCompletionPromptSent) {
+                    request.isCompletionPromptSent = true;
+                    updated = true;
 
-                const promptPayload = {
-                  type: "ride_completion_verify",
-                  title: "Destination Reached? 🏁",
-                  message: "It looks like you've reached the destination. Has the passenger completed their ride?",
-                  meta: { rideId: ride._id, requestId: request._id }
-                };
+                    const promptPayload = {
+                      type: "ride_completion_verify",
+                      title: "Destination Reached? 🏁",
+                      message: "It looks like you've reached the destination. Has the passenger completed their ride?",
+                      meta: { rideId: ride._id, requestId: request._id }
+                    };
 
-                await createAndSendNotification({ ...promptPayload, userId: ride.createdBy });
-                await createAndSendNotification({ ...promptPayload, userId: request.requester });
+                    await createAndSendNotification({ ...promptPayload, userId: ride.createdBy });
+                    await createAndSendNotification({ ...promptPayload, userId: request.requester });
+                 }
 
+                // Always emit socket event (throttled)
                 ioInstance.to(room).emit("ride:confirm-completion", {
                   rideId: ride._id,
                   requestId: request._id,
                   passengerId: request.requester
                 });
 
-                console.log(`[Socket] Completion prompt triggered (by driver) for ride ${rideId}, passenger ${request.requester}`);
+                console.log(`[Socket] Completion prompt emitted (by driver) for ride ${rideId}, passenger ${request.requester}`);
               }
             }
             if (updated) await ride.save();

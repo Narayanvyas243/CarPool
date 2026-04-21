@@ -237,27 +237,61 @@ const RideDetails = () => {
 
     socket.on("ride:confirm-completion", handleAutoCompletion);
 
+    const handleRideCompleted = (data: any) => {
+      console.log("[RideDetails] Received ride:completed event:", data);
+      
+      // If I'm the passenger involved and didn't complete it myself, show feedback dialog
+      if (user?.id === data.passengerId && !isOwner) {
+        setFeedbackTargetUserId(ride.createdBy?._id || ride.createdBy);
+        setIsFeedbackDialogOpen(true);
+        toast({ title: "Ride Completed! 🏁", description: "The driver has ended the ride. Thanks for using SmartPool!" });
+      }
+
+      // Refresh ride data for everyone in the room
+      fetch(getApiUrl(`/api/rides/${id}`))
+        .then(res => res.json())
+        .then(updatedRide => setRide(updatedRide))
+        .catch(err => console.error("Error refreshing ride data:", err));
+    };
+
+    socket.on("ride:completed", handleRideCompleted);
+
     return () => {
       socket.off("ride:confirm-completion", handleAutoCompletion);
+      socket.off("ride:completed", handleRideCompleted);
     };
-  }, [socket, user, isOwner, passengers]);
+  }, [socket, user, isOwner, passengers, id, ride?.createdBy]);
 
-  // Keep manual distance-based trigger as a fallback (for passengers only)
+  // Distance-based trigger for completion prompt
   useEffect(() => {
+    // For Passengers
     const isActuallyOnboarded = myRequest?.isOnboarded;
     const isAlreadyCompleted = myRequest?.isCompleted;
 
     if (
+      !isOwner &&
       isActuallyOnboarded && 
       !isAlreadyCompleted && 
       distanceToDestination !== null && 
       distanceToDestination < 300 &&
-      !isOwner &&
-      !isCompletionDialogOpen // Don't re-trigger if already open from socket
+      !isCompletionDialogOpen
     ) {
       setIsCompletionDialogOpen(true);
     }
-  }, [distanceToDestination, myRequest, isOwner, isCompletionDialogOpen]);
+
+    // For Drivers
+    if (
+      isOwner &&
+      distanceToDestination !== null &&
+      distanceToDestination < 300 &&
+      !isCompletionDialogOpen
+    ) {
+      const hasActivePassengers = passengers.some(p => p.isOnboarded && !p.isCompleted);
+      if (hasActivePassengers) {
+        setIsCompletionDialogOpen(true);
+      }
+    }
+  }, [distanceToDestination, myRequest, isOwner, isCompletionDialogOpen, passengers]);
 
   if (isLoading) {
     return (
