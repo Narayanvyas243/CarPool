@@ -251,7 +251,7 @@ const RideDetails = () => {
       isActuallyOnboarded && 
       !isAlreadyCompleted && 
       distanceToDestination !== null && 
-      distanceToDestination < 50 &&
+      distanceToDestination < 300 &&
       !isOwner &&
       !isCompletionDialogOpen // Don't re-trigger if already open from socket
     ) {

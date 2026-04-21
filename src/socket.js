@@ -74,8 +74,8 @@ const initSocket = (httpServer) => {
         if (!ride || !ride.toCoords) return;
 
         const distance = calculateDistance(lat, lng, ride.toCoords.lat, ride.toCoords.lng);
-        // If within 200m of destination
-        if (distance < 200) {
+        // If within 300m of destination
+        if (distance < 300) {
           const { createAndSendNotification } = require("./services/notificationService");
           
           if (role === 'passenger') {
