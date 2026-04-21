@@ -695,6 +695,67 @@ const RideDetails = () => {
           </div>
         )}
 
+        {/* Manual Arrival Card for Passenger (always visible when onboarded & not completed) */}
+        {!isOwner && myRequest?.isOnboarded && !myRequest?.isCompleted && (
+          <Card className="border-0 shadow-soft animate-fade-in border-l-4 border-l-success" style={{ animationDelay: "0.13s" }}>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-success/10">
+                  <MapPin className="h-5 w-5 text-success" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Reached your destination?</p>
+                  <p className="text-xs text-muted-foreground">Tap below to confirm ride completion</p>
+                </div>
+              </div>
+              <Button
+                className="w-full h-11 bg-success hover:bg-success/90 shadow-md shadow-success/20"
+                onClick={() => setIsCompletionDialogOpen(true)}
+                disabled={isConfirmingCompletion}
+              >
+                {isConfirmingCompletion ? "Processing..." : "✅ I've Reached My Destination"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Manual Completion Card for Driver (always visible when they have onboarded passengers) */}
+        {isOwner && passengers.some((p: any) => p.isOnboarded && !p.isCompleted) && (
+          <Card className="border-0 shadow-soft animate-fade-in border-l-4 border-l-primary" style={{ animationDelay: "0.14s" }}>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Reached destination?</p>
+                  <p className="text-xs text-muted-foreground">Mark each passenger's ride as complete</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {passengers.filter((p: any) => p.isOnboarded && !p.isCompleted).map((p: any) => (
+                  <div key={p._id} className="flex items-center justify-between p-3 rounded-xl bg-secondary">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {(p.name || 'P').split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
+                      </div>
+                      <span className="text-sm font-medium">{p.name}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-8 bg-primary hover:bg-primary/90 text-xs"
+                      onClick={() => handleConfirmCompletion(p._id, p.requesterId)}
+                      disabled={isConfirmingCompletion}
+                    >
+                      {isConfirmingCompletion ? "..." : "Complete"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Price Card */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.15s" }}>
           <CardContent className="p-5">
@@ -923,7 +984,7 @@ const RideDetails = () => {
              </div>
              <div className="text-center space-y-1">
                <p className="font-semibold text-foreground">Arrival Detected</p>
-               <p className="text-xs text-muted-foreground">You are within 50 meters of {ride.toLocation}</p>
+               <p className="text-xs text-muted-foreground">You are near {ride.toLocation}</p>
              </div>
           </div>
           <div className="flex gap-3">
