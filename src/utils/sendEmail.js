@@ -1,114 +1,106 @@
-const { google } = require('googleapis');
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 
-const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", message = `Your OTP is ${otp}. It will expire in 5 minutes.`) => {
+const sendEmail = async (email, otp, subject = "SmartPool Verification Code", message = `Your verification code is ${otp}.`) => {
+  const EMAIL_USER = process.env.EMAIL_USER;
   const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
   const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
-  const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-      <h2 style="color: #3b82f6; text-align: center;">SmartPool Verification</h2>
-      <p>Hello,</p>
-      <p>Thank you for using SmartPool. Please use the following One-Time Password (OTP) to complete your verification:</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e40af; background: #f3f4f6; padding: 10px 20px; border-radius: 5px;">${otp}</span>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        .container { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; }
+        .header { background-color: #3b82f6; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .logo { color: white; font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 2px; }
+        .content { padding: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; }
+        .otp-container { text-align: center; margin: 40px 0; background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px dashed #cbd5e1; }
+        .otp-code { font-size: 36px; font-weight: 800; color: #1e40af; letter-spacing: 8px; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #94a3b8; }
+        .security-note { font-size: 13px; color: #64748b; font-style: italic; border-top: 1px solid #f1f5f9; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 class="logo">SMARTPOOL</h1>
+        </div>
+        <div class="content">
+          <h2>Verification Required</h2>
+          <p>Hello,</p>
+          <p>You recently requested a security code for your SmartPool account. Please use the verification code below to proceed:</p>
+          
+          <div class="otp-container">
+            <div class="otp-code">${otp}</div>
+          </div>
+          
+          <p>This code will expire in <strong>5 minutes</strong> for security reasons.</p>
+          
+          <div class="security-note">
+            <p>If you did not request this code, please secure your account immediately or ignore this message. This is an automated security message; please do not reply.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p>&copy; 2024 SmartPool UPES Chapter. All rights reserved.</p>
+        </div>
       </div>
-      <p>This OTP is valid for <strong>5 minutes</strong>. If you did not request this, please ignore this email.</p>
-      <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-      <p style="font-size: 12px; color: #6b7280; text-align: center;">&copy; 2024 SmartPool Team. All rights reserved.</p>
-    </div>
+    </body>
+    </html>
   `;
 
-  // Fallback to SMTP if Gmail API credentials are missing
-  if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
-    console.log("Gmail API credentials missing. Falling back to SMTP...");
-    
-    const transporter = nodemailer.createTransport({
-      service: 'gmail', // or host: 'smtp.gmail.com', port: 465, secure: true
+  // Determine transport method
+  let transporter;
+
+  if (CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN) {
+    // Standard OAuth2 Transport (Professional Path)
+    console.log("[Email] Initializing OAuth2 transporter...");
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER,
+        type: 'OAuth2',
+        user: EMAIL_USER,
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
+        refreshToken: REFRESH_TOKEN
+      }
+    });
+  } else {
+    // Fallback SMTP (Local/Testing Path)
+    console.log("[Email] OAuth2 credentials missing. Falling back to SMTP...");
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
         pass: process.env.EMAIL_PASS
       }
     });
-
-    const mailOptions = {
-      from: `"SmartPool OTP" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: subject,
-      text: message,
-      html: htmlContent
-    };
-
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully via SMTP: ${subject}`);
-      return;
-    } catch (error) {
-      console.error("SMTP sending failed:", error);
-      throw error;
-    }
   }
 
-  // Gmail API Path
-  const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
-  oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+  const mailOptions = {
+    from: `"SmartPool Security" <${EMAIL_USER}>`,
+    to: email,
+    subject: subject,
+    text: `${message} It will expire in 5 minutes.`,
+    html: htmlContent,
+    headers: {
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'high'
+    }
+  };
 
   try {
-    const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
-
-    const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-    const messageId = `<${Date.now()}.${Math.random().toString(36).substring(7)}@gmail.com>`;
-    const date = new Date().toUTCString();
-
-    // Constructing a standard MIME message with CRLF (\r\n) and complete headers
-    const emailParts = [
-      `From: "SmartPool OTP" <${process.env.EMAIL_USER}>`,
-      `To: ${email}`,
-      `Subject: ${utf8Subject}`,
-      `Message-ID: ${messageId}`,
-      `Date: ${date}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: multipart/alternative; boundary="boundary-string"`,
-      '',
-      `--boundary-string`,
-      `Content-Type: text/plain; charset=utf-8`,
-      `Content-Transfer-Encoding: 7bit`,
-      '',
-      message,
-      '',
-      `--boundary-string`,
-      `Content-Type: text/html; charset=utf-8`,
-      `Content-Transfer-Encoding: 7bit`,
-      '',
-      htmlContent,
-      '',
-      `--boundary-string--`
-    ];
-
-    const emailRaw = emailParts.join('\r\n');
-
-    const base64EncodedEmail = Buffer.from(emailRaw)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: base64EncodedEmail,
-      },
-    });
-
-    console.log(`Email sent successfully via Gmail API: ${subject}`);
-
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email] ${CLIENT_ID ? 'OAuth2' : 'SMTP'} Success: ${info.messageId}`);
   } catch (error) {
-    console.error("Gmail API sending failed:", error);
+    console.error(`[Email] ${CLIENT_ID ? 'OAuth2' : 'SMTP'} Failed:`, error.message);
     throw error;
   }
 };
 
 module.exports = sendEmail;
+
 
