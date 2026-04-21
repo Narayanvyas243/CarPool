@@ -1,13 +1,12 @@
-const { google } = require('googleapis');
+require("dotenv").config();
 const nodemailer = require('nodemailer');
 
-const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", message = `Your OTP is ${otp}. It will expire in 5 minutes.`) => {
-  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-  const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
-  const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
+const email = "narayan.vyas12@gmail.com";
+const otp = "888888";
+const subject = "MIME Consistency Test";
+const message = `Your OTP: ${otp}`;
 
-  const htmlContent = `
+const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
       <h2 style="color: #3b82f6; text-align: center;">SmartPool Verification</h2>
       <p>Hello,</p>
@@ -16,17 +15,13 @@ const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", mes
         <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e40af; background: #f3f4f6; padding: 10px 20px; border-radius: 5px;">${otp}</span>
       </div>
       <p>This OTP is valid for <strong>5 minutes</strong>. If you did not request this, please ignore this email.</p>
-      <hr style="border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;">
-      <p style="font-size: 12px; color: #6b7280; text-align: center;">&copy; 2024 SmartPool Team. All rights reserved.</p>
     </div>
-  `;
+`;
 
-  // Fallback to SMTP if Gmail API credentials are missing
-  if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
-    console.log("Gmail API credentials missing. Falling back to SMTP...");
-    
+async function testSMTP() {
+    console.log("--- Testing Improved SMTP ---");
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // or host: 'smtp.gmail.com', port: 465, secure: true
+      service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -42,27 +37,19 @@ const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", mes
     };
 
     try {
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully via SMTP: ${subject}`);
-      return;
+      const info = await transporter.sendMail(mailOptions);
+      console.log("SMTP SUCCESS:", info.response);
     } catch (error) {
-      console.error("SMTP sending failed:", error);
-      throw error;
+      console.error("SMTP FAILURE:", error.message);
     }
-  }
+}
 
-  // Gmail API Path
-  const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
-  oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-
-  try {
-    const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
-
+async function testGmailMime() {
+    console.log("\n--- Testing Gmail API MIME Construction ---");
     const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
-    const messageId = `<${Date.now()}.${Math.random().toString(36).substring(7)}@gmail.com>`;
+    const messageId = `<${Date.now()}@gmail.com>`;
     const date = new Date().toUTCString();
 
-    // Constructing a standard MIME message with CRLF (\r\n) and complete headers
     const emailParts = [
       `From: "SmartPool OTP" <${process.env.EMAIL_USER}>`,
       `To: ${email}`,
@@ -88,27 +75,26 @@ const sendEmail = async (email, otp, subject = "SmartPool OTP Verification", mes
     ];
 
     const emailRaw = emailParts.join('\r\n');
+    console.log("MIME Body Preview (First 200 chars):\n", emailRaw.substring(0, 200));
+    
+    if (emailRaw.includes('\r\n') && emailRaw.includes('--boundary-string')) {
+        console.log("MIME Format: VALID (CRLF and Boundaries present)");
+    } else {
+        console.log("MIME Format: INVALID");
+    }
 
     const base64EncodedEmail = Buffer.from(emailRaw)
       .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
+    
+    console.log("Base64URL length:", base64EncodedEmail.length);
+}
 
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: base64EncodedEmail,
-      },
-    });
+async function run() {
+    await testSMTP();
+    await testGmailMime();
+}
 
-    console.log(`Email sent successfully via Gmail API: ${subject}`);
-
-  } catch (error) {
-    console.error("Gmail API sending failed:", error);
-    throw error;
-  }
-};
-
-module.exports = sendEmail;
-
+run();

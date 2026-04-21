@@ -10,7 +10,12 @@ const router = express.Router();
 ================================= */
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, phone, gender } = req.body;
+    const { name, password, phone, gender } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -334,7 +339,12 @@ router.delete("/:id", async (req, res) => {
 ================================= */
 router.post("/forgot-password", async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
+    
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
     const user = await User.findOne({ email });
 
     if (!user) {
