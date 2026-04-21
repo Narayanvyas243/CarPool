@@ -55,7 +55,6 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
 
   // --- PATH 1: Resend (Best for Deliverability) ---
   if (RESEND_API_KEY) {
-    console.log("[Email] Attempting to send via Resend...");
     try {
       const resend = new Resend(RESEND_API_KEY);
       const { data, error } = await resend.emails.send({
@@ -63,12 +62,12 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
         to: [email],
         reply_to: EMAIL_USER || 'support@smartpool.com',
         subject: subject,
-        text: `${message} It will expire in 5 minutes.`,
+        text: message, // Removed redundant expiration string
         html: htmlContent,
       });
 
       if (error) {
-        console.error("[Email] Resend API error:", error);
+        console.warn(`[Email] Resend error (likely Sandbox restriction): ${error.message}. Falling back...`);
         // Fall through to other methods...
       } else {
         console.log("[Email] Resend Success:", data.id);
@@ -82,7 +81,6 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
 
   // --- PATH 2: Gmail OAuth2 (Highly Reliable) ---
   if (CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN) {
-    console.log("[Email] Falling back to OAuth2 transporter...");
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -99,7 +97,7 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
         from: `"SmartPool Security" <${EMAIL_USER}>`,
         to: email,
         subject: subject,
-        text: `${message} It will expire in 5 minutes.`,
+        text: message,
         html: htmlContent,
         headers: { 'Importance': 'high', 'X-Priority': '1' }
       });
@@ -113,7 +111,6 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
   }
 
   // --- PATH 3: Basic SMTP (Last Resort) ---
-  console.log("[Email] Using basic SMTP fallback...");
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -127,7 +124,7 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
       from: `"SmartPool Security" <${EMAIL_USER}>`,
       to: email,
       subject: subject,
-      text: `${message} It will expire in 5 minutes.`,
+      text: message,
       html: htmlContent,
     });
     console.log("[Email] SMTP Success:", info.messageId);
