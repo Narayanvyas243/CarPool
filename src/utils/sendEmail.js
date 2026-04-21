@@ -1,11 +1,13 @@
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
+const { Resend } = require('resend');
 
 const sendEmail = async (email, otp, subject = "SmartPool Verification Code", message = `Your verification code is ${otp}.`) => {
   const EMAIL_USER = process.env.EMAIL_USER;
   const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
   const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -51,56 +53,91 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
     </html>
   `;
 
-  // Determine transport method
-  let transporter;
+  // --- PATH 1: Resend (Best for Deliverability) ---
+  if (RESEND_API_KEY) {
+    console.log("[Email] Attempting to send via Resend...");
+    try {
+      const resend = new Resend(RESEND_API_KEY);
+      const { data, error } = await resend.emails.send({
+        from: 'SmartPool <onboarding@resend.dev>',
+        to: [email],
+        reply_to: EMAIL_USER || 'support@smartpool.com',
+        subject: subject,
+        text: `${message} It will expire in 5 minutes.`,
+        html: htmlContent,
+      });
 
-  if (CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN) {
-    // Standard OAuth2 Transport (Professional Path)
-    console.log("[Email] Initializing OAuth2 transporter...");
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        type: 'OAuth2',
-        user: EMAIL_USER,
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET,
-        refreshToken: REFRESH_TOKEN
+      if (error) {
+        console.error("[Email] Resend API error:", error);
+        // Fall through to other methods...
+      } else {
+        console.log("[Email] Resend Success:", data.id);
+        return;
       }
-    });
-  } else {
-    // Fallback SMTP (Local/Testing Path)
-    console.log("[Email] OAuth2 credentials missing. Falling back to SMTP...");
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
+    } catch (err) {
+      console.error("[Email] Resend request failed:", err.message);
+      // Fall through...
+    }
   }
 
-  const mailOptions = {
-    from: `"SmartPool Security" <${EMAIL_USER}>`,
-    to: email,
-    subject: subject,
-    text: `${message} It will expire in 5 minutes.`,
-    html: htmlContent,
-    headers: {
-      'X-Priority': '1',
-      'X-MSMail-Priority': 'High',
-      'Importance': 'high'
+  // --- PATH 2: Gmail OAuth2 (Highly Reliable) ---
+  if (CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN) {
+    console.log("[Email] Falling back to OAuth2 transporter...");
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          type: 'OAuth2',
+          user: EMAIL_USER,
+          clientId: CLIENT_ID,
+          clientSecret: CLIENT_SECRET,
+          refreshToken: REFRESH_TOKEN
+        }
+      });
+
+      const info = await transporter.sendMail({
+        from: `"SmartPool Security" <${EMAIL_USER}>`,
+        to: email,
+        subject: subject,
+        text: `${message} It will expire in 5 minutes.`,
+        html: htmlContent,
+        headers: { 'Importance': 'high', 'X-Priority': '1' }
+      });
+
+      console.log("[Email] OAuth2 Success:", info.messageId);
+      return;
+    } catch (error) {
+      console.error("[Email] OAuth2 Failed:", error.message);
+      // Fall through...
     }
-  };
+  }
+
+  // --- PATH 3: Basic SMTP (Last Resort) ---
+  console.log("[Email] Using basic SMTP fallback...");
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email] ${CLIENT_ID ? 'OAuth2' : 'SMTP'} Success: ${info.messageId}`);
+    const info = await transporter.sendMail({
+      from: `"SmartPool Security" <${EMAIL_USER}>`,
+      to: email,
+      subject: subject,
+      text: `${message} It will expire in 5 minutes.`,
+      html: htmlContent,
+    });
+    console.log("[Email] SMTP Success:", info.messageId);
   } catch (error) {
-    console.error(`[Email] ${CLIENT_ID ? 'OAuth2' : 'SMTP'} Failed:`, error.message);
+    console.error("[Email] SMTP Failed:", error.message);
     throw error;
   }
 };
 
 module.exports = sendEmail;
+
 
 
