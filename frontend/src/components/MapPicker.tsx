@@ -16,6 +16,7 @@ import { MapPin, Search, Loader2, Navigation, Map as MapIcon, X, AlertTriangle }
 const QUICK_LOCATIONS = [
   { name: "UPES Bidholi", lat: 30.4161, lng: 77.9668 },
   { name: "UPES Kandoli", lat: 30.3853, lng: 77.9657 },
+  { name: "Railway Station", lat: 30.3143, lng: 78.0336 },
   { name: "Clock Tower", lat: 30.3244, lng: 78.0411 },
   { name: "ISBT Dehradun", lat: 30.2856, lng: 77.9981 },
 ];
@@ -277,9 +278,14 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
     setIsSearching(true);
     try {
-      // Added viewbox for Dehradun/UPES area to increase priority (approx bounds for Dehradun)
-      const viewbox = "77.8,30.2,78.2,30.5";
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&viewbox=${viewbox}&bounded=0`);
+      // Automatic query enhancement: Add "Dehradun" if not present to ensure local results
+      const enhancedQuery = (lowerQuery.includes("dehradun") || lowerQuery.includes("upes")) 
+        ? searchQuery 
+        : `${searchQuery}, Dehradun`;
+
+      // Corrected viewbox for Dehradun/UPES area (minLon, maxLat, maxLon, minLat)
+      const viewbox = "77.75,30.55,78.30,30.15";
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(enhancedQuery)}&viewbox=${viewbox}&bounded=0`);
       const data = await res.json();
       if (data && data.length > 0) {
         const L = (window as any).L;
