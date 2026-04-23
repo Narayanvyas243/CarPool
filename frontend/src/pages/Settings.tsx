@@ -18,6 +18,7 @@ import {
   ArrowLeft, 
   ChevronRight,
   LogOut,
+  Shield,
   ShieldCheck,
   Smartphone,
   UserCircle
@@ -318,6 +319,20 @@ const Settings = () => {
                 <Bell className="h-4 w-4 text-accent" />
               </div>
               <span className="font-medium">Feedback & Support</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Button>
+
+          <Button 
+            variant="outline" 
+            className="w-full h-14 justify-between px-6 border-0 shadow-soft bg-card hover:bg-muted/50"
+            onClick={() => navigate("/safety-privacy")}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-medium">Safety & Privacy</span>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Button>

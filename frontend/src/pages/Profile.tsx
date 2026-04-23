@@ -131,7 +131,7 @@ const Profile = () => {
   const menuItems = [
     { icon: History, label: "Ride History", path: "/history" },
     { icon: QrCode, label: "Payment QR Code", path: "/payment-qr" },
-    { icon: Shield, label: "Safety & Privacy", path: "/safety" },
+    { icon: Shield, label: "Safety & Privacy", path: "/safety-privacy" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 

@@ -52,7 +52,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><RideHistory /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/safety" element={<ProtectedRoute><Safety /></ProtectedRoute>} />
+                <Route path="/safety-privacy" element={<ProtectedRoute><Safety /></ProtectedRoute>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
