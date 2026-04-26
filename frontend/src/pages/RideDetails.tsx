@@ -20,6 +20,7 @@ import {
   Mail,
   Copy,
   Check,
+  PhoneCall,
   X
 } from "lucide-react";
 import { calculateDistance, getFairPriceEstimate, getPriceStatus } from "../utils/fareUtils";
