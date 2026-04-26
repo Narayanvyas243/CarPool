@@ -46,6 +46,12 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false
+  },
+  
+  upiId: {
+    type: String,
+    trim: true,
+    lowercase: true
   }
 
 }, { timestamps: true });

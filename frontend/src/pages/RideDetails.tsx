@@ -876,6 +876,44 @@ const RideDetails = () => {
                   </p>
                 </div>
               )}
+
+              {hasBeenAccepted && ride.createdBy?.upiId && (
+                <div className="pt-2">
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 h-12 uppercase font-black text-xs tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+                    onClick={() => {
+                      const upiId = ride.createdBy.upiId;
+                      const name = encodeURIComponent(ride.createdBy.name);
+                      const amount = ride.price || 50;
+                      const note = encodeURIComponent(`SmartPool ride to ${ride.toLocation}`);
+                      // Standard UPI Deep Link format
+                      const upiUrl = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
+                      
+                      // For desktop, it might not work, but for mobile it works.
+                      window.location.href = upiUrl;
+                      
+                      toast({ 
+                        title: "Opening UPI App", 
+                        description: "Please complete the payment in your preferred UPI app.",
+                      });
+                    }}
+                  >
+                    <QrCode className="h-4 w-4 mr-2" /> Pay Driver via UPI
+                  </Button>
+                  <p className="text-[9px] text-center text-muted-foreground mt-2 italic">
+                    * Zero transaction fee. Pay directly to the driver's bank account.
+                  </p>
+                </div>
+              )}
+
+              {hasBeenAccepted && !ride.createdBy?.upiId && (
+                <div className="p-3 rounded-xl bg-muted/50 border border-dashed border-border flex items-center gap-3">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground font-medium leading-tight">
+                    Driver hasn't set up their UPI ID yet. Please pay in cash or ask for their QR code during the ride.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

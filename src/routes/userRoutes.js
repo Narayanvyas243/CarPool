@@ -140,7 +140,8 @@ router.post("/verify-otp", async (req, res) => {
         email: user.email,
         role: user.role,
         gender: user.gender,
-        phone: user.phone
+        phone: user.phone,
+        upiId: user.upiId
       }
     });
 
@@ -187,7 +188,8 @@ router.post("/login", async (req, res) => {
         email: user.email,
         role: user.role,
         gender: user.gender,
-        phone: user.phone
+        phone: user.phone,
+        upiId: user.upiId
       }
     });
 
@@ -260,6 +262,7 @@ router.put("/:id", async (req, res) => {
         user.gender = normalizedGender;
       }
     }
+    if (req.body.upiId !== undefined) user.upiId = req.body.upiId;
 
     await user.save();
 
@@ -271,7 +274,8 @@ router.put("/:id", async (req, res) => {
         email: user.email,
         role: user.role,
         gender: user.gender,
-        phone: user.phone
+        phone: user.phone,
+        upiId: user.upiId
       }
     });
 

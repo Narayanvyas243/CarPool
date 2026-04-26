@@ -103,6 +103,26 @@ const Profile = () => {
     }
   };
 
+  const handleUpdateUpi = async (upiId: string) => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(getApiUrl(`/api/users/${user.id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upiId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "UPI ID Updated", description: "Your payment details have been saved." });
+        setProfileData(data.user);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const handleCancelRide = async (rideId: string) => {
     if (!confirm("Are you sure you want to cancel this ride? This will notify all passengers.")) return;
     try {
@@ -236,6 +256,40 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Payment Details */}
+        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250 fill-mode-both">
+          <div className="premium-card rounded-3xl p-5 bg-card/50 backdrop-blur-sm border-border/40">
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Payment Details (UPI)</h2>
+            <div className="flex items-center gap-4 group">
+              <div className="w-10 h-10 rounded-2xl bg-success/10 flex items-center justify-center transition-colors group-hover:bg-success/20">
+                <QrCode className="h-5 w-5 text-success" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">UPI ID</p>
+                    <p className="text-sm font-bold text-foreground truncate max-w-[150px]">{profileData?.upiId || "Not set"}</p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-[10px] h-8 font-black uppercase text-primary hover:bg-primary/5 transition-colors"
+                    onClick={() => {
+                      const upi = prompt("Enter your UPI ID (e.g., name@okaxis):", profileData?.upiId || "");
+                      if (upi !== null) handleUpdateUpi(upi);
+                    }}
+                  >
+                    {profileData?.upiId ? 'Edit' : 'Add'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <p className="text-[9px] text-muted-foreground/60 mt-4 leading-relaxed italic">
+              * Direct UPI allows passengers to pay you zero commission fees. Ensure your UPI ID is correct to receive payments.
+            </p>
           </div>
         </div>
 

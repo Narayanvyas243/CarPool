@@ -13,8 +13,8 @@ const {
 
 const router = express.Router();
 const RIDE_POPULATE = [
-  { path: "createdBy", select: "name email role gender phone" },
-  { path: "requests.requester", select: "name email role gender phone" }
+  { path: "createdBy", select: "name email role gender phone upiId" },
+  { path: "requests.requester", select: "name email role gender phone upiId" }
 ];
 
 // CREATE RIDE
