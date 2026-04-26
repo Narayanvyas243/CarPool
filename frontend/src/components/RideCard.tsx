@@ -65,8 +65,18 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
             <div className="flex items-center gap-1">
               <span className="text-2xl font-black text-primary tracking-tighter">₹{ride.pricePerSeat}</span>
             </div>
-            {getPriceBadge()}
-            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block mt-0.5">per person</span>
+            <div className="flex flex-col items-end -mt-0.5">
+              {ride.priceComparison ? (
+                <>
+                  <span className="text-[10px] font-bold text-muted-foreground/70 whitespace-nowrap tracking-tight">
+                    Smart Rate: ₹{ride.priceComparison.fairPrice}
+                  </span>
+                  {getPriceBadge()}
+                </>
+              ) : (
+                <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">per person</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -109,9 +119,12 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
               <div className="flex items-center gap-1.5 min-w-0">
                 <p className="text-xs font-black text-foreground truncate tracking-tight">{ride.driverName}</p>
                 {ride.driverGender && (
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
-                    ride.driverGender.toLowerCase() === 'male' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 ${
+                    ride.driverGender.toLowerCase() === 'male' 
+                      ? 'bg-blue-100/50 text-blue-700 border border-blue-200' 
+                      : 'bg-pink-100/50 text-pink-700 border border-pink-200'
                   }`}>
+                    <div className={`w-1 h-1 rounded-full ${ride.driverGender.toLowerCase() === 'male' ? 'bg-blue-500' : 'bg-pink-500'}`} />
                     {ride.driverGender}
                   </span>
                 )}

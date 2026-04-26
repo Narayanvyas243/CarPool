@@ -308,7 +308,16 @@ const Profile = () => {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="text-sm font-bold text-foreground">{req.requester.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-foreground">{req.requester.name}</p>
+                          {req.requester.gender && (
+                            <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                              req.requester.gender.toLowerCase() === 'male' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
+                            }`}>
+                              {req.requester.gender}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-muted-foreground uppercase">{req.requester.role}</p>
                       </div>
                       <div className="text-right">

@@ -821,6 +821,13 @@ const RideDetails = () => {
                         {(p.name || 'P').split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
                       </div>
                       <span className="text-sm font-medium">{p.name}</span>
+                      {p.gender && (
+                        <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                          p.gender.toLowerCase() === 'male' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
+                        }`}>
+                          {p.gender}
+                        </span>
+                      )}
                     </div>
                     <Button
                       size="sm"
