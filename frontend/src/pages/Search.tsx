@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getApiUrl } from "../apiConfig";
 
 
+import { calculateDistance, getFairPriceEstimate } from "../utils/fareUtils";
+
 const Search = () => {
   const [searchParams] = useSearchParams();
   const [rides, setRides] = useState<RideData[]>([]);
@@ -30,6 +32,21 @@ const Search = () => {
         if (data.rides) {
           const mappedRides = data.rides.map((r: any) => {
             const dateObj = new Date(r.time);
+            const driverPrice = r.price !== undefined ? r.price : 50;
+            
+            let priceComparison = undefined;
+            if (r.fromCoords && r.toCoords) {
+              const distance = calculateDistance(
+                r.fromCoords.lat, r.fromCoords.lng,
+                r.toCoords.lat, r.toCoords.lng
+              );
+              const fairPrice = getFairPriceEstimate(distance);
+              priceComparison = {
+                fairPrice,
+                status: driverPrice < fairPrice * 0.8 ? "cheap" : driverPrice > fairPrice * 1.3 ? "premium" : "fair"
+              };
+            }
+
             return {
               id: r._id,
               driverName: r.createdBy?.name || "Unknown",
@@ -42,7 +59,8 @@ const Search = () => {
               time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               availableSeats: r.seatsAvailable,
               totalSeats: r.totalSeats || 4,
-              pricePerSeat: r.price !== undefined ? r.price : 50,
+              pricePerSeat: driverPrice,
+              priceComparison,
               driverId: r.createdBy?._id || r.createdBy || "",
               fromCoords: r.fromCoords,
               toCoords: r.toCoords,

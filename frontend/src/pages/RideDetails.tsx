@@ -22,6 +22,7 @@ import {
   Check,
   X
 } from "lucide-react";
+import { calculateDistance, getFairPriceEstimate, getPriceStatus } from "../utils/fareUtils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl } from "../apiConfig";
@@ -64,6 +65,19 @@ const RideDetails = () => {
   const [isMidwayDialogOpen, setIsMidwayDialogOpen] = useState(false);
   const [pickupText, setPickupText] = useState("");
   const [dropoffText, setDropoffText] = useState("");
+
+  const fareComparison = useMemo(() => {
+    if (!ride?.fromCoords || !ride?.toCoords || ride?.price === undefined) return null;
+    const distance = calculateDistance(
+      ride.fromCoords.lat, ride.fromCoords.lng,
+      ride.toCoords.lat, ride.toCoords.lng
+    );
+    const fairPrice = getFairPriceEstimate(distance);
+    return {
+      fairPrice,
+      status: getPriceStatus(ride.price, fairPrice)
+    };
+  }, [ride]);
 
   const { socket } = useNotifications();
 
@@ -826,20 +840,42 @@ const RideDetails = () => {
         {/* Price Card */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.15s" }}>
           <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-success/10">
-                  <IndianRupee className="h-6 w-6 text-success" />
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-success/10">
+                    <IndianRupee className="h-6 w-6 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Price per seat</p>
+                    <p className="text-2xl font-bold text-foreground">₹{ride.price !== undefined ? ride.price : 50}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Price per seat</p>
-                  <p className="text-2xl font-bold text-foreground">₹{ride.price !== undefined ? ride.price : 50}</p>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <QrCode className="h-5 w-5" />
+                  <span className="text-sm">UPI Default</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <QrCode className="h-5 w-5" />
-                <span className="text-sm">UPI Default</span>
-              </div>
+              
+              {fareComparison && (
+                <div className={`p-3 rounded-xl border ${fareComparison.status.bg} border-current/10 flex flex-col gap-1`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${fareComparison.status.color}`}>
+                      {fareComparison.status.label}
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground">
+                      Smart Estimate: ₹{fareComparison.fairPrice}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/80 leading-tight">
+                    {fareComparison.status.type === 'cheap' 
+                      ? "This ride is priced significantly lower than the campus average. Great catch!"
+                      : fareComparison.status.type === 'premium'
+                      ? "This driver charges a premium for extra comfort or vehicle quality."
+                      : "The price is within the recommended fair range for this distance."}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

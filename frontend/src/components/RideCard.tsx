@@ -17,6 +17,10 @@ export interface RideData {
   availableSeats: number;
   totalSeats: number;
   pricePerSeat: number;
+  priceComparison?: {
+    fairPrice: number;
+    status: "cheap" | "premium" | "fair";
+  };
   driverId: string;
   isPassenger?: boolean;
   fromCoords?: { lat: number; lng: number };
@@ -35,6 +39,15 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
   const seatsLeft = ride.availableSeats;
   const isDriver = user?.id === ride.driverId;
 
+  const getPriceBadge = () => {
+    if (!ride.priceComparison) return null;
+    const { status } = ride.priceComparison;
+    
+    if (status === "cheap") return <span className="text-[7px] font-black text-emerald-500 uppercase tracking-tighter bg-emerald-50 px-1 rounded animate-pulse">Budget Friendly</span>;
+    if (status === "premium") return <span className="text-[7px] font-black text-amber-600 uppercase tracking-tighter bg-amber-50 px-1 rounded">Premium Rate</span>;
+    return <span className="text-[7px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-1 rounded">Fair Price</span>;
+  };
+
   return (
     <Card 
       className="premium-card rounded-[2.5rem] overflow-hidden hover:border-primary/40 cursor-pointer active:scale-[0.98] transition-all bg-white/60 backdrop-blur-md border-white/40 flex flex-col h-full group shadow-lg hover:shadow-2xl"
@@ -48,9 +61,12 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
           }`}>
             {seatsLeft === 0 ? "Full" : `${seatsLeft} Seats Left`}
           </div>
-          <div className="text-right">
-            <span className="text-2xl font-black text-primary tracking-tighter">₹{ride.pricePerSeat}</span>
-            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block">per person</span>
+          <div className="text-right flex flex-col items-end">
+            <div className="flex items-center gap-1">
+              <span className="text-2xl font-black text-primary tracking-tighter">₹{ride.pricePerSeat}</span>
+            </div>
+            {getPriceBadge()}
+            <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block mt-0.5">per person</span>
           </div>
         </div>
 
