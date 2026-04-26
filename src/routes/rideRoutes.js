@@ -312,7 +312,7 @@ router.post("/:rideId/request", async (req, res) => {
       userId: ride.createdBy,
       type: "ride_request_received",
       title: "New ride request",
-      message: `${requester.name} requested ${Number(seatsRequested) || 1} seat(s) for your ride.`,
+      message: `${requester.name} (${requester.gender}) requested ${Number(seatsRequested) || 1} seat(s) for your ride.`,
       meta: { rideId: ride._id, requestId: ride.requests[ride.requests.length - 1]._id }
     });
 

@@ -190,6 +190,7 @@ const RideDetails = () => {
         avatar: "",
         phone: req.requester?.phone || "",
         role: req.requester?.role || "student",
+        gender: req.requester?.gender,
         email: req.requester?.email || "",
         isOnboarded: req.isOnboarded,
         isCompleted: req.isCompleted,
@@ -530,6 +531,13 @@ const RideDetails = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground">{ride.createdBy?.name}</span>
+                    {ride.createdBy?.gender && (
+                      <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                        ride.createdBy.gender.toLowerCase() === 'male' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
+                      }`}>
+                        {ride.createdBy.gender}
+                      </span>
+                    )}
                     <BadgeCheck className="h-5 w-5 text-success" />
                   </div>
                   <div className="flex flex-col gap-1 mt-1">
@@ -658,8 +666,13 @@ const RideDetails = () => {
                     )}
                   </div>
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-muted-foreground font-medium">
+                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                       {passenger.name.split(' ')[0]}
+                      {passenger.gender && (
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          passenger.gender.toLowerCase() === 'male' ? 'bg-blue-400' : 'bg-pink-400'
+                        }`} title={passenger.gender} />
+                      )}
                     </span>
                     {passenger.isCompleted && (
                       <span className="text-[8px] text-success font-bold uppercase tracking-tighter">Done</span>
@@ -698,7 +711,16 @@ const RideDetails = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-semibold text-foreground">{req.requester?.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-semibold text-foreground">{req.requester?.name}</p>
+                            {req.requester?.gender && (
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                                req.requester.gender.toLowerCase() === 'male' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
+                              }`}>
+                                {req.requester.gender}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-muted-foreground capitalize font-medium">{req.requester?.role} • 1 seat requested</p>
                         </div>
                       </div>
@@ -857,6 +879,11 @@ const RideDetails = () => {
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/20 uppercase tracking-wider">
                       {selectedPassenger.role}
                     </span>
+                    {selectedPassenger.gender && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/30 uppercase tracking-wider">
+                        {selectedPassenger.gender}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1101,6 +1128,11 @@ const RideDetails = () => {
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/20 uppercase tracking-wider">
                       {selectedPassenger.role}
                     </span>
+                    {selectedPassenger.gender && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/30 uppercase tracking-wider">
+                        {selectedPassenger.gender}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -34,6 +34,7 @@ const Search = () => {
               id: r._id,
               driverName: r.createdBy?.name || "Unknown",
               driverRole: r.createdBy?.role || "student",
+              driverGender: r.createdBy?.gender,
               isVerified: true,
               source: r.fromLocation,
               destination: r.toLocation,

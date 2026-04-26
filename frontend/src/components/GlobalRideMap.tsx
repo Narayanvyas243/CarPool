@@ -77,7 +77,9 @@ const GlobalRideMap = ({ rides, onSelectRide }: GlobalRideMapProps) => {
                 </div>
                 <div>
                   <p className="font-bold text-sm leading-tight text-slate-800">{ride.driverName}</p>
-                  <p className="text-[10px] text-slate-500 capitalize">{ride.driverRole}</p>
+                  <p className="text-[10px] text-slate-500 capitalize">
+                    {ride.driverRole} {ride.driverGender ? `• ${ride.driverGender}` : ''}
+                  </p>
                 </div>
               </div>
               <div className="space-y-1 text-[11px] text-slate-600 border-l-2 border-slate-100 pl-2">

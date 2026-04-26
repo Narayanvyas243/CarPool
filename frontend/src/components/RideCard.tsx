@@ -8,6 +8,7 @@ export interface RideData {
   driverName: string;
   driverAvatar?: string;
   driverRole: "student" | "faculty";
+  driverGender?: string;
   isVerified: boolean;
   source: string;
   destination: string;
@@ -89,7 +90,16 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
               </div>
             </div>
             <div className="flex flex-col min-w-0">
-              <p className="text-xs font-black text-foreground truncate tracking-tight">{ride.driverName}</p>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-xs font-black text-foreground truncate tracking-tight">{ride.driverName}</p>
+                {ride.driverGender && (
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                    ride.driverGender.toLowerCase() === 'male' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'
+                  }`}>
+                    {ride.driverGender}
+                  </span>
+                )}
+              </div>
               <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
                 <Clock className="h-2.5 w-2.5 text-primary/60" />
                 {ride.time}
