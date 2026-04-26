@@ -98,8 +98,13 @@ const Safety = () => {
                   In case of any emergency, directly contact campus security or regional emergency services through our one-tap emergency button.
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="destructive" size="sm" className="w-full gap-2">
-                    <PhoneCall className="h-4 w-4" /> Call SOS
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="w-full gap-2 shadow-lg shadow-destructive/30"
+                    onClick={() => window.open("tel:112")}
+                  >
+                    <PhoneCall className="h-4 w-4" /> Call SOS (112)
                   </Button>
                 </div>
               </div>

@@ -437,7 +437,18 @@ const RideDetails = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold">Ride Details</h1>
-          <div className="w-10" />
+          <Button 
+            variant="destructive" 
+            size="icon" 
+            className="h-10 w-10 rounded-full shadow-lg shadow-destructive/20 active:scale-95 transition-all"
+            onClick={() => {
+              if (window.confirm("Do you want to call emergency services (112)?")) {
+                window.open("tel:112");
+              }
+            }}
+          >
+            <PhoneCall className="h-5 w-5 animate-pulse-soft" />
+          </Button>
         </div>
       </div>
 
