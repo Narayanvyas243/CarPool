@@ -64,6 +64,7 @@ const Search = () => {
               driverId: r.createdBy?._id || r.createdBy || "",
               fromCoords: r.fromCoords,
               toCoords: r.toCoords,
+              genderPreference: r.genderPreference,
               isPassenger: r.requests?.some((req: any) => 
                 (req.requester?._id === user?.id || req.requester === user?.id) && 
                 req.status === "accepted"

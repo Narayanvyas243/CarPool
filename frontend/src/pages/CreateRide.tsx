@@ -30,6 +30,7 @@ const CreateRide = () => {
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState("4");
   const [price, setPrice] = useState("");
+  const [genderPreference, setGenderPreference] = useState("any");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -100,6 +101,7 @@ const CreateRide = () => {
           seatsAvailable: parseInt(seats, 10),
           totalSeats: parseInt(seats, 10),
           price: parseInt(price, 10),
+          genderPreference,
           createdBy: user.id
         })
       });
@@ -289,6 +291,31 @@ const CreateRide = () => {
                     />
                   </div>
                 </div>
+              </div>
+              
+              {/* Gender Preference */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Ride Preference</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {['any', 'male', 'female'].map((pref) => (
+                    <Button
+                      key={pref}
+                      type="button"
+                      variant={genderPreference === pref ? "default" : "outline"}
+                      onClick={() => setGenderPreference(pref)}
+                      className={`h-11 capitalize text-[10px] font-black tracking-widest rounded-2xl transition-all ${
+                        genderPreference === pref ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]' : 'bg-secondary/40 border-0 hover:bg-secondary/60'
+                      }`}
+                    >
+                      {pref === 'any' ? 'Anyone' : pref}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-muted-foreground/70 font-bold uppercase tracking-wider px-1">
+                   {genderPreference === 'any' ? "🔓 Open to all genders" : 
+                    genderPreference === 'male' ? "🛡️ Restricted to Male passengers" : 
+                    "🛡️ Restricted to Female passengers"}
+                </p>
               </div>
 
               {/* QR Payment Info */}

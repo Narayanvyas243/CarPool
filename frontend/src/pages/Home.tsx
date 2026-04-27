@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl } from "../apiConfig";
+import { calculateDistance, getFairPriceEstimate, getPriceStatus } from "../utils/fareUtils";
 import { 
   ChevronLeft,
   ChevronRight,
@@ -56,7 +57,20 @@ const Home = () => {
               isPassenger: r.requests?.some((req: any) => 
                 (req.requester?._id === user?.id || req.requester === user?.id) && 
                 req.status === "accepted"
-              )
+              ),
+              genderPreference: r.genderPreference,
+              priceComparison: (() => {
+                if (!r.fromCoords || !r.toCoords || r.price === undefined) return null;
+                const distance = calculateDistance(
+                  r.fromCoords.lat, r.fromCoords.lng,
+                  r.toCoords.lat, r.toCoords.lng
+                );
+                const fairPrice = getFairPriceEstimate(distance);
+                return {
+                  fairPrice,
+                  status: getPriceStatus(r.price, fairPrice)
+                };
+              })()
             };
           });
           setRides(mappedRides);

@@ -85,6 +85,12 @@ const rideSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  genderPreference: {
+    type: String,
+    enum: ["any", "male", "female"],
+    default: "any",
+    lowercase: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

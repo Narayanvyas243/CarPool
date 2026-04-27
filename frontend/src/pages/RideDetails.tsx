@@ -165,14 +165,14 @@ const RideDetails = () => {
     }
   };
 
-  const isOwner = user && ride?.createdBy && ride.createdBy._id === user.id;
+  const isOwner = user && ride?.createdBy && (ride.createdBy._id || ride.createdBy) === user.id;
 
   const hasBeenAccepted = user && (ride?.requests || []).some((req: any) => 
-    req.requester?._id === user.id && req.status === "accepted"
+    (req.requester?._id || req.requester) === user.id && req.status === "accepted"
   );
   
   const myRequest = user && (ride?.requests || []).find((req: any) => 
-    req.requester?._id === user.id
+    (req.requester?._id || req.requester) === user.id
   );
 
   const isAlreadyOnboarded = myRequest?.isOnboarded;
@@ -209,11 +209,10 @@ const RideDetails = () => {
         email: req.requester?.email || "",
         isOnboarded: req.isOnboarded,
         isCompleted: req.isCompleted,
-        requesterId: req.requester?._id
+        requesterId: req.requester?._id || req.requester
       }));
   }, [ride]);
 
-  // Hook for live tracking
   const { myLocation, otherLocation, distance, distanceToDestination } = useLiveTracking(
     id || "", 
     user?.id || "", 
@@ -222,31 +221,23 @@ const RideDetails = () => {
     ride?.toCoords
   );
 
-  // Show onboarding modal when close (< 15m) and not yet onboarded
   useEffect(() => {
-    if (distance !== null && distance < 15 && isTrackingActive && !isOwner) {
+    if (distance !== null && distance < 15 && isTrackingActive && !isOwner && !myRequest?.isOnboarded) {
       setIsOnboardingOpen(true);
     }
-  }, [distance, isTrackingActive, isOwner]);
+  }, [distance, isTrackingActive, isOwner, myRequest?.isOnboarded]);
 
-  // Listen for automatic completion prompts from server
   useEffect(() => {
     if (!socket) return;
 
     const handleAutoCompletion = (data: any) => {
-      console.log("[RideDetails] Received auto-completion prompt:", data);
-      
-      // If I'm the driver OR if I'm the specific passenger mentioned
       const isMePassenger = user?.id === data.passengerId;
       const amIDriver = isOwner;
 
       if (isMePassenger || amIDriver) {
         setAutoPromptRequestId(data.requestId);
-        
-        // Try to find the passenger name for better UI
         const passenger = passengers.find(p => p.requesterId === data.passengerId);
         if (passenger) setAutoPromptPassengerName(passenger.name);
-        
         setIsCompletionDialogOpen(true);
       }
     };
@@ -254,16 +245,12 @@ const RideDetails = () => {
     socket.on("ride:confirm-completion", handleAutoCompletion);
 
     const handleRideCompleted = (data: any) => {
-      console.log("[RideDetails] Received ride:completed event:", data);
-      
-      // If I'm the passenger involved and didn't complete it myself, show feedback dialog
       if (user?.id === data.passengerId && !isOwner) {
         setFeedbackTargetUserId(ride.createdBy?._id || ride.createdBy);
         setIsFeedbackDialogOpen(true);
         toast({ title: "Ride Completed! 🏁", description: "The driver has ended the ride. Thanks for using SmartPool!" });
       }
 
-      // Refresh ride data for everyone in the room
       fetch(getApiUrl(`/api/rides/${id}`))
         .then(res => res.json())
         .then(updatedRide => setRide(updatedRide))
@@ -278,9 +265,7 @@ const RideDetails = () => {
     };
   }, [socket, user, isOwner, passengers, id, ride?.createdBy]);
 
-  // Distance-based trigger for completion prompt
   useEffect(() => {
-    // For Passengers
     const isActuallyOnboarded = myRequest?.isOnboarded;
     const isAlreadyCompleted = myRequest?.isCompleted;
 
@@ -295,7 +280,6 @@ const RideDetails = () => {
       setIsCompletionDialogOpen(true);
     }
 
-    // For Drivers
     if (
       isOwner &&
       distanceToDestination !== null &&
@@ -307,7 +291,7 @@ const RideDetails = () => {
         setIsCompletionDialogOpen(true);
       }
     }
-  }, [distanceToDestination, myRequest, isOwner, isCompletionDialogOpen, passengers]);
+  }, [distanceToDestination, myRequest?.isOnboarded, myRequest?.isCompleted, isOwner, isCompletionDialogOpen, passengers]);
 
   if (isLoading) {
     return (
@@ -357,7 +341,6 @@ const RideDetails = () => {
       toast({ title: "Onboarded! 🎉", description: "You have officially joined the ride." });
       setIsOnboardingOpen(false);
 
-      // Refresh ride data
       const upRes = await fetch(getApiUrl(`/api/rides/${id}`));
       setRide(await upRes.json());
     } catch (err: any) {
@@ -388,7 +371,6 @@ const RideDetails = () => {
       });
       setIsCompletionDialogOpen(false);
 
-      // Trigger Feedback Dialog
       let targetId = forcePassengerId;
       if (!targetId) {
         if (isOwner) {
@@ -404,7 +386,6 @@ const RideDetails = () => {
         setIsFeedbackDialogOpen(true);
       }
 
-      // Refresh ride data
       setRide(data.ride);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -445,7 +426,6 @@ const RideDetails = () => {
 
   return (
     <Layout showHeader={false} showNav={false}>
-      {/* Custom Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="container flex items-center justify-between h-14 px-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -468,7 +448,6 @@ const RideDetails = () => {
       </div>
 
       <div className="container px-4 py-6 pb-24 space-y-4">
-        {/* Route Card */}
         <Card className="border-0 shadow-elevated animate-fade-in overflow-hidden">
           <div className="bg-gradient-primary p-4">
             <div className="flex items-center justify-between text-primary-foreground">
@@ -482,6 +461,20 @@ const RideDetails = () => {
               </div>
             </div>
           </div>
+          {ride.genderPreference && ride.genderPreference !== 'any' && (
+            <div className={`px-4 py-2 border-b border-border flex items-center gap-2 ${
+              ride.genderPreference === 'female' ? 'bg-pink-50/50' : 'bg-blue-50/50'
+            }`}>
+              <div className={`text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest ${
+                ride.genderPreference === 'female' ? 'bg-pink-100 text-pink-600 border border-pink-200' : 'bg-blue-100 text-blue-600 border border-blue-200'
+              }`}>
+                {ride.genderPreference === 'female' ? '🌸 Ladies Only Ride' : '👤 Male Only Ride'}
+              </div>
+              <p className="text-[10px] text-muted-foreground font-medium italic">
+                * Respecting community safety preferences.
+              </p>
+            </div>
+          )}
           <CardContent className="p-5">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
@@ -497,7 +490,6 @@ const RideDetails = () => {
           </CardContent>
         </Card>
 
-        {/* Map View */}
         {ride.fromLocation && ride.toLocation && (
           <div className="animate-fade-in" style={{ animationDelay: "0.02s" }}>
             <RideMap 
@@ -544,7 +536,6 @@ const RideDetails = () => {
           </div>
         )}
 
-        {/* Driver Card */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.05s" }}>
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
@@ -603,7 +594,6 @@ const RideDetails = () => {
                         title: "Driver Contact",
                         description: `Phone: ${ride.createdBy?.phone || "Not provided"}`,
                       });
-                      // Also copy to clipboard
                       if (ride.createdBy?.phone) {
                         navigator.clipboard.writeText(ride.createdBy.phone);
                         toast({ title: "Copied", description: "Phone number copied to clipboard" });
@@ -647,7 +637,6 @@ const RideDetails = () => {
           </CardContent>
         </Card>
 
-        {/* Passengers */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-4">
@@ -718,7 +707,6 @@ const RideDetails = () => {
           </CardContent>
         </Card>
 
-        {/* Pending Requests for Owner */}
         {isOwner && pendingRequests.length > 0 && (
           <div className="animate-fade-in space-y-3" style={{ animationDelay: "0.12s" }}>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2 px-1">
@@ -777,7 +765,6 @@ const RideDetails = () => {
           </div>
         )}
 
-        {/* Manual Arrival Card for Passenger (always visible when onboarded & not completed) */}
         {!isOwner && myRequest?.isOnboarded && !myRequest?.isCompleted && (
           <Card className="border-0 shadow-soft animate-fade-in border-l-4 border-l-success" style={{ animationDelay: "0.13s" }}>
             <CardContent className="p-5">
@@ -801,7 +788,6 @@ const RideDetails = () => {
           </Card>
         )}
 
-        {/* Manual Completion Card for Driver (always visible when they have onboarded passengers) */}
         {isOwner && passengers.some((p: any) => p.isOnboarded && !p.isCompleted) && (
           <Card className="border-0 shadow-soft animate-fade-in border-l-4 border-l-primary" style={{ animationDelay: "0.14s" }}>
             <CardContent className="p-5">
@@ -845,7 +831,6 @@ const RideDetails = () => {
           </Card>
         )}
 
-        {/* Price Card */}
         <Card className="border-0 shadow-soft animate-fade-in" style={{ animationDelay: "0.15s" }}>
           <CardContent className="p-5">
             <div className="flex flex-col gap-4">
@@ -864,8 +849,7 @@ const RideDetails = () => {
                   <span className="text-sm">UPI Default</span>
                 </div>
               </div>
-              
-              {fareComparison && (
+              {fareComparison ? (
                 <div className={`p-3 rounded-xl border ${fareComparison.status.bg} border-current/10 flex flex-col gap-1`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-[10px] font-black uppercase tracking-wider ${fareComparison.status.color}`}>
@@ -883,6 +867,13 @@ const RideDetails = () => {
                       : "The price is within the recommended fair range for this distance."}
                   </p>
                 </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-muted/30 border border-dashed border-border flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Smart Rate Unavailable
+                  </span>
+                  <p className="text-[9px] text-muted-foreground italic">Coordinate data missing for this ride.</p>
+                </div>
               )}
 
               {hasBeenAccepted && ride.createdBy?.upiId && (
@@ -894,12 +885,8 @@ const RideDetails = () => {
                       const name = encodeURIComponent(ride.createdBy.name);
                       const amount = ride.price || 50;
                       const note = encodeURIComponent(`SmartPool ride to ${ride.toLocation}`);
-                      // Standard UPI Deep Link format
                       const upiUrl = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
-                      
-                      // For desktop, it might not work, but for mobile it works.
                       window.location.href = upiUrl;
-                      
                       toast({ 
                         title: "Opening UPI App", 
                         description: "Please complete the payment in your preferred UPI app.",
@@ -927,7 +914,6 @@ const RideDetails = () => {
         </Card>
       </div>
 
-      {/* Fixed Bottom Button */}
       {!isOwner && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-md border-t border-border">
           <Button 
@@ -955,7 +941,6 @@ const RideDetails = () => {
         </div>
       )}
 
-      {/* Passenger Profile Dialog */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent className="sm:max-w-[350px] p-0 overflow-hidden border-0 shadow-elevated">
           {selectedPassenger && (
@@ -982,14 +967,20 @@ const RideDetails = () => {
               </div>
               
               <div className="px-6 py-6 -mt-6 bg-background rounded-t-[30px] space-y-6">
-                <div className="flex items-center justify-center py-4 border-b border-border">
-                  <div className="text-center">
-                    <div className="font-bold text-lg text-success">Verified</div>
-                    <p className="text-[10px] text-muted-foreground uppercase">Status</p>
+                {isOwner && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <BadgeCheck className={`h-5 w-5 ${selectedPassenger.isOnboarded ? 'text-success' : 'text-muted-foreground'}`} />
+                      <span className="text-xs font-bold text-foreground">{selectedPassenger.isOnboarded ? 'Onboard' : 'Waiting'}</span>
+                    </div>
+                    <div className="h-4 w-px bg-slate-200" />
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${selectedPassenger.isCompleted ? 'bg-success' : 'bg-warning'}`} />
+                      <span className="text-xs font-bold text-foreground">{selectedPassenger.isCompleted ? 'Completed' : 'In Progress'}</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Contact Info */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <div className="p-2.5 rounded-xl bg-primary/10">
@@ -1006,7 +997,7 @@ const RideDetails = () => {
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
                             onClick={() => {
                               navigator.clipboard.writeText(selectedPassenger.phone);
-                              toast({ title: "Copied", description: "Passenger's number copied to clipboard" });
+                              toast({ title: "Copied", description: "Number copied to clipboard" });
                             }}
                           >
                             <Copy className="h-4 w-4" />
@@ -1021,42 +1012,56 @@ const RideDetails = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-[10px] text-muted-foreground uppercase font-bold">Email Address</p>
-                      <p className="font-medium text-sm break-all">{selectedPassenger.email || "Not provided"}</p>
+                      <p className="font-medium text-xs break-all">{selectedPassenger.email || "Not provided"}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {selectedPassenger.phone && (
+                <div className="flex flex-col gap-3 pt-2">
+                   {isOwner && selectedPassenger.isOnboarded && !selectedPassenger.isCompleted && (
+                     <Button 
+                       className="w-full bg-primary hover:bg-primary/90 h-11"
+                       onClick={() => {
+                         handleConfirmCompletion(selectedPassenger._id, selectedPassenger.requesterId);
+                         setIsProfileOpen(false);
+                       }}
+                       disabled={isConfirmingCompletion}
+                     >
+                       <MapPin className="h-4 w-4 mr-2" /> Complete Passenger Ride
+                     </Button>
+                   )}
+                   <div className="grid grid-cols-2 gap-3">
+                    {selectedPassenger.phone && (
+                      <Button 
+                        variant="outline"
+                        className="w-full border-success text-success h-11"
+                        onClick={() => window.open(`tel:${selectedPassenger.phone}`)}
+                      >
+                        <Phone className="h-4 w-4 mr-2" /> Call
+                      </Button>
+                    )}
                     <Button 
-                      className="w-full bg-success hover:bg-success/90 h-11"
-                      onClick={() => window.open(`tel:${selectedPassenger.phone}`)}
+                      variant="outline" 
+                      className="w-full h-11 border-primary text-primary"
+                      onClick={() => {
+                        if (selectedPassenger?.phone) {
+                          const phone = selectedPassenger.phone.replace(/\D/g, '').replace(/^91/, '');
+                          window.open(`https://wa.me/91${phone}`, "_blank");
+                        } else {
+                          toast({ title: "Not Available", description: "Phone number not provided." });
+                        }
+                      }}
                     >
-                      <Phone className="h-4 w-4 mr-2" /> Call
+                      <MessageCircle className="h-4 w-4 mr-2" /> Message
                     </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    className="w-full h-11 border-primary text-primary"
-                    onClick={() => {
-                      if (selectedPassenger?.phone) {
-                        const phone = selectedPassenger.phone.replace(/\D/g, '').replace(/^91/, '');
-                        window.open(`https://wa.me/91${phone}`, "_blank");
-                      } else {
-                        toast({ title: "Not Available", description: "Phone number not provided yet." });
-                      }
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" /> Message
-                  </Button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-      {/* Midway Join Dialog */}
+
       <Dialog open={isMidwayDialogOpen} onOpenChange={setIsMidwayDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -1094,7 +1099,6 @@ const RideDetails = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Onboarding Dialog */}
       <Dialog open={isOnboardingOpen} onOpenChange={setIsOnboardingOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -1120,7 +1124,6 @@ const RideDetails = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Completion Dialog */}
       <Dialog open={isCompletionDialogOpen} onOpenChange={setIsCompletionDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -1153,7 +1156,6 @@ const RideDetails = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Feedback Dialog */}
       <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -1203,51 +1205,6 @@ const RideDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Manual Completion Action in Profile View for Owner */}
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="sm:max-w-[350px] p-0 overflow-hidden border-0 shadow-elevated">
-          {selectedPassenger && (
-            <div className="animate-fade-in">
-              <div className="bg-gradient-primary pt-8 pb-12 px-6 text-center">
-                <Avatar className="h-20 w-20 mx-auto ring-4 ring-background/20 shadow-lg">
-                  <AvatarFallback className="bg-background text-primary text-xl font-bold">
-                    {(selectedPassenger.name || "P").split(' ').filter(Boolean).map((n: string) => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="mt-3 text-primary-foreground">
-                  <h3 className="text-xl font-bold">{selectedPassenger.name}</h3>
-                  <div className="flex items-center justify-center gap-1.5 mt-1 opacity-90">
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/20 uppercase tracking-wider">
-                      {selectedPassenger.role}
-                    </span>
-                    {selectedPassenger.gender && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/30 uppercase tracking-wider">
-                        {selectedPassenger.gender}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="px-6 py-6 -mt-6 bg-background rounded-t-[30px] space-y-6">
-                {/* Status Section */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <BadgeCheck className={`h-5 w-5 ${selectedPassenger.isOnboarded ? 'text-success' : 'text-muted-foreground'}`} />
-                    <span className="text-xs font-bold text-foreground">{selectedPassenger.isOnboarded ? 'Onboard' : 'Waiting'}</span>
-                  </div>
-                  <div className="h-4 w-px bg-slate-200" />
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedPassenger.isCompleted ? 'bg-success' : 'bg-warning'}`} />
-                    <span className="text-xs font-bold text-foreground">{selectedPassenger.isCompleted ? 'Completed' : 'In Progress'}</span>
-                  </div>
-                </div>
-
-                {/* Contact Info */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 rounded-xl bg-primary/10">
                       <Phone className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1">

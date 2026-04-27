@@ -23,6 +23,7 @@ export interface RideData {
   };
   driverId: string;
   isPassenger?: boolean;
+  genderPreference?: string;
   fromCoords?: { lat: number; lng: number };
   toCoords?: { lat: number; lng: number };
 }
@@ -61,6 +62,13 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
           }`}>
             {seatsLeft === 0 ? "Full" : `${seatsLeft} Seats Left`}
           </div>
+          {ride.genderPreference && ride.genderPreference !== 'any' && (
+            <div className={`text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest ${
+              ride.genderPreference === 'female' ? 'bg-pink-100 text-pink-600 border border-pink-200' : 'bg-blue-100 text-blue-600 border border-blue-200'
+            } animate-in zoom-in-50 duration-500`}>
+              {ride.genderPreference === 'female' ? '🌸 Ladies Only' : '👤 Male Only'}
+            </div>
+          )}
           <div className="text-right flex flex-col items-end">
             <div className="flex items-center gap-1">
               <span className="text-2xl font-black text-primary tracking-tighter">₹{ride.pricePerSeat}</span>
