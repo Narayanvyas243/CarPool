@@ -1205,62 +1205,6 @@ const RideDetails = () => {
           </div>
         </DialogContent>
       </Dialog>
-                      <Phone className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">Phone Number</p>
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{selectedPassenger.phone || "Not provided"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-3 pt-2">
-                   {isOwner && selectedPassenger.isOnboarded && !selectedPassenger.isCompleted && (
-                     <Button 
-                       className="w-full bg-primary hover:bg-primary/90 h-11"
-                       onClick={() => {
-                         handleConfirmCompletion(selectedPassenger._id, selectedPassenger.requesterId);
-                         setIsProfileOpen(false);
-                       }}
-                       disabled={isConfirmingCompletion}
-                     >
-                       {isConfirmingCompletion ? "Processing..." : "Complete Passenger Ride"}
-                     </Button>
-                   )}
-                   <div className="grid grid-cols-2 gap-3">
-                    {selectedPassenger.phone && (
-                      <Button 
-                        variant="outline"
-                        className="w-full border-success text-success h-11"
-                        onClick={() => window.open(`tel:${selectedPassenger.phone}`)}
-                      >
-                        <Phone className="h-4 w-4 mr-2" /> Call
-                      </Button>
-                    )}
-                    <Button 
-                      variant="outline" 
-                      className="w-full h-11 border-primary text-primary"
-                      onClick={() => {
-                        if (selectedPassenger?.phone) {
-                          const phone = selectedPassenger.phone.replace(/\D/g, '').replace(/^91/, '');
-                          window.open(`https://wa.me/91${phone}`, "_blank");
-                        } else {
-                          toast({ title: "Not Available", description: "Phone number not provided yet." });
-                        }
-                      }}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" /> Message
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 };
