@@ -150,7 +150,7 @@ const Profile = () => {
 
   const menuItems = [
     { icon: History, label: "Ride History", path: "/history" },
-    { icon: QrCode, label: "Payment QR Code", path: "/payment-qr" },
+    { icon: QrCode, label: "Payment UPI ID", path: "/payment-qr" },
     { icon: Shield, label: "Safety & Privacy", path: "/safety-privacy" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
@@ -262,7 +262,7 @@ const Profile = () => {
         {/* Payment Details */}
         <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250 fill-mode-both">
           <div className="premium-card rounded-3xl p-5 bg-card/50 backdrop-blur-sm border-border/40">
-            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Payment Details (UPI)</h2>
+            <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Payment UPI ID</h2>
             <div className="flex items-center gap-4 group">
               <div className="w-10 h-10 rounded-2xl bg-success/10 flex items-center justify-center transition-colors group-hover:bg-success/20">
                 <QrCode className="h-5 w-5 text-success" />

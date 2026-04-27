@@ -31,6 +31,7 @@ const CreateRide = () => {
   const [seats, setSeats] = useState("4");
   const [price, setPrice] = useState("");
   const [genderPreference, setGenderPreference] = useState("any");
+  const [upiId, setUpiId] = useState(user?.upiId || "");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -102,6 +103,7 @@ const CreateRide = () => {
           totalSeats: parseInt(seats, 10),
           price: parseInt(price, 10),
           genderPreference,
+          upiId: upiId || user?.upiId,
           createdBy: user.id
         })
       });
@@ -318,16 +320,25 @@ const CreateRide = () => {
                 </p>
               </div>
 
-              {/* QR Payment Info */}
-              <div className="bg-secondary/50 rounded-xl p-4 flex items-start gap-3">
-                <QrCode className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Payment QR Code</p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    Your UPI QR code from your profile will be shown to passengers for payment
-                  </p>
-                </div>
-              </div>
+               {/* Payment UPI ID */}
+               <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Payment UPI ID</label>
+                    <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full">Commission Free</span>
+                 </div>
+                 <div className="relative">
+                   <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                   <Input
+                     placeholder="yourname@okaxis"
+                     value={upiId}
+                     onChange={(e) => setUpiId(e.target.value.toLowerCase())}
+                     className="pl-11 h-12 bg-secondary border-0 font-medium"
+                   />
+                 </div>
+                 <p className="text-[9px] text-muted-foreground/70 font-bold uppercase tracking-wider px-1 leading-relaxed">
+                   🔒 Defaults to your profile UPI. You can change it for this specific ride if needed.
+                 </p>
+               </div>
 
               {/* Info */}
               <div className="bg-primary/5 rounded-xl p-4 flex items-start gap-3">

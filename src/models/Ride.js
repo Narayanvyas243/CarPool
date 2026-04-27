@@ -96,6 +96,11 @@ const rideSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
+  upiId: {
+    type: String,
+    trim: true,
+    lowercase: true
+  },
   // Keeps all incoming booking requests for this ride.
   requests: {
     type: [rideRequestSchema],

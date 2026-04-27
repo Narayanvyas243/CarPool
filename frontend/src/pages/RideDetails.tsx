@@ -846,7 +846,7 @@ const RideDetails = () => {
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <QrCode className="h-5 w-5" />
-                  <span className="text-sm">UPI Default</span>
+                  <span className="text-sm">UPI</span>
                 </div>
               </div>
               {fareComparison ? (
@@ -881,8 +881,8 @@ const RideDetails = () => {
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 h-12 uppercase font-black text-xs tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
                     onClick={() => {
-                      const upiId = ride.createdBy.upiId;
-                      const name = encodeURIComponent(ride.createdBy.name);
+                      const upiId = ride.upiId || ride.createdBy?.upiId;
+                      const name = encodeURIComponent(ride.createdBy?.name || "Driver");
                       const amount = ride.price || 50;
                       const note = encodeURIComponent(`SmartPool ride to ${ride.toLocation}`);
                       const upiUrl = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
@@ -901,7 +901,7 @@ const RideDetails = () => {
                 </div>
               )}
 
-              {hasBeenAccepted && !ride.createdBy?.upiId && (
+              {hasBeenAccepted && !(ride.upiId || ride.createdBy?.upiId) && (
                 <div className="p-3 rounded-xl bg-muted/50 border border-dashed border-border flex items-center gap-3">
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   <p className="text-[10px] text-muted-foreground font-medium leading-tight">
