@@ -137,10 +137,23 @@ const Safety = () => {
                 We collect essential data to facilitate rides, including location during the active ride period, device information, and profile details. This data is strictly used for service provision and is never monetized or sold to third-party advertisers.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-4" className="border-none">
+            <AccordionItem value="item-4">
               <AccordionTrigger className="hover:no-underline text-base font-medium">Reporting an Incident</AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed">
                 If you feel unsafe or experience a terms violation, use the in-app reporting tool immediately. In severe cases, the SOS feature will alert local authorities and campus safety officers with your live location and vehicle details.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-5" className="border-none">
+              <AccordionTrigger className="hover:no-underline text-base font-medium">UPES Campus Security Contacts</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground leading-relaxed space-y-2">
+                <p>For urgent security needs at UPES Dehradun (Kandoli and Bidholi campuses), contact the security staff:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><strong>CSO (Maj. Shyam Bahadur Thapa):</strong> <a href="tel:9219795367" className="text-blue-500 hover:underline">9219795367</a> / <a href="tel:9997799853" className="text-blue-500 hover:underline">9997799853</a></li>
+                  <li><strong>PSO (Mr. Daljeet Singh):</strong> <a href="tel:9837556972" className="text-blue-500 hover:underline">9837556972</a></li>
+                  <li><strong>Control Room Panel:</strong> <a href="tel:9720796185" className="text-blue-500 hover:underline">9720796185</a></li>
+                  <li><strong>Main Gate:</strong> 131 (Internal Extension)</li>
+                  <li><strong>General Helpline:</strong> <a href="tel:18001028737" className="text-blue-500 hover:underline">1800-102-8737</a></li>
+                </ul>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
