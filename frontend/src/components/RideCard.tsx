@@ -1,4 +1,4 @@
-import { MapPin, Clock, Users, User, BadgeCheck, ChevronRight } from "lucide-react";
+import { MapPin, Clock, Calendar, Users, User, BadgeCheck, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -137,10 +137,16 @@ const RideCard = ({ ride, onJoinRide }: RideCardProps) => {
                   </span>
                 )}
               </div>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                <Clock className="h-2.5 w-2.5 text-primary/60" />
-                {ride.time}
-              </p>
+              <div className="flex flex-col gap-0.5 mt-0.5">
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                  <Clock className="h-2.5 w-2.5 text-primary/60" />
+                  {ride.time}
+                </p>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                  <Calendar className="h-2.5 w-2.5 text-primary/60" />
+                  {ride.date}
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1.5 p-2 px-3 rounded-2xl bg-primary/5 group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/30 transition-all duration-300">
