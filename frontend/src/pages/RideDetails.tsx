@@ -36,6 +36,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import RideMap from "@/components/RideMap";
+import RideChat from "@/components/RideChat";
 import { useLiveTracking } from "../hooks/useLiveTracking";
 import { useNotifications } from "../context/NotificationContext";
 
@@ -436,18 +437,42 @@ const RideDetails = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-semibold">Ride Details</h1>
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="h-10 w-10 rounded-full shadow-lg shadow-destructive/20 active:scale-95 transition-all"
-            onClick={() => {
-              if (window.confirm("Do you want to call emergency services (112)?")) {
-                window.open("tel:112");
-              }
-            }}
-          >
-            <PhoneCall className="h-5 w-5 animate-pulse-soft" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {(isOwner || hasBeenAccepted) && (
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-10 w-10 rounded-full bg-secondary hover:bg-secondary/80 border-border shadow-sm active:scale-95 transition-all"
+                onClick={() => {
+                  const trackingUrl = `${window.location.origin}/track/${id}`;
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'SmartPool Live Tracking',
+                      text: `Track my live ride on SmartPool! Driver: ${ride.createdBy?.name || 'Driver'}`,
+                      url: trackingUrl
+                    }).catch(console.error);
+                  } else {
+                    navigator.clipboard.writeText(trackingUrl);
+                    toast({ title: "Link Copied!", description: "Tracking link copied to clipboard. Share it with friends or family." });
+                  }
+                }}
+              >
+                <Copy className="h-4 w-4 text-foreground" />
+              </Button>
+            )}
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="h-10 w-10 rounded-full shadow-lg shadow-destructive/20 active:scale-95 transition-all"
+              onClick={() => {
+                if (window.confirm("Do you want to call emergency services (112)?")) {
+                  window.open("tel:112");
+                }
+              }}
+            >
+              <PhoneCall className="h-5 w-5 animate-pulse-soft" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -916,6 +941,12 @@ const RideDetails = () => {
             </div>
           </CardContent>
         </Card>
+
+        {(isOwner || hasBeenAccepted) && (
+          <div className="animate-fade-in" style={{ animationDelay: "0.16s" }}>
+            <RideChat rideId={id as string} />
+          </div>
+        )}
       </div>
 
       {!isOwner && (

@@ -17,10 +17,21 @@ const RIDE_POPULATE = [
   { path: "requests.requester", select: "name email role gender phone upiId" }
 ];
 
+// Helper function to get next occurrence of a day
+function getNextDayOfWeek(date, dayOfWeek) {
+  const resultDate = new Date(date.getTime());
+  resultDate.setDate(date.getDate() + (7 + dayOfWeek - date.getDay()) % 7);
+  return resultDate;
+}
+
+const dayNameToNumber = {
+  "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6
+};
+
 // CREATE RIDE
 router.post("/create", async (req, res) => {
   try {
-    const { createdBy } = req.body;
+    const { createdBy, isRecurring, recurringDays } = req.body;
 
     if (!createdBy) {
       return res.status(400).json({
@@ -45,14 +56,61 @@ router.post("/create", async (req, res) => {
       });
     }
 
-    const ride = await Ride.create(req.body);
-    const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
-    await scheduleRideLifecycleNotifications(populatedRide);
+    if (isRecurring && recurringDays && recurringDays.length > 0) {
+      const ridesToCreate = [];
+      const numWeeks = 4; // Generate for the next 4 weeks
 
-    res.status(201).json({
-      message: "Ride created successfully",
-      ride: populatedRide
-    });
+      for (let week = 0; week < numWeeks; week++) {
+        for (const dayName of recurringDays) {
+          const dayNum = dayNameToNumber[dayName];
+          if (dayNum !== undefined) {
+            let nextDate = getNextDayOfWeek(rideTime, dayNum);
+            // Add weeks
+            nextDate.setDate(nextDate.getDate() + (week * 7));
+            
+            // Adjust time to match the original time
+            nextDate.setHours(rideTime.getHours(), rideTime.getMinutes(), 0, 0);
+
+            // Only create if it's in the future (or very near future)
+            if (nextDate >= new Date(now.getTime() - 60000)) {
+              ridesToCreate.push({
+                ...req.body,
+                time: nextDate.toISOString()
+              });
+            }
+          }
+        }
+      }
+
+      if (ridesToCreate.length === 0) {
+        return res.status(400).json({ message: "No valid recurring dates found." });
+      }
+
+      const createdRides = await Ride.insertMany(ridesToCreate);
+      
+      // Schedule notifications for all created rides
+      for (const ride of createdRides) {
+         const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+         await scheduleRideLifecycleNotifications(populatedRide);
+      }
+
+      const populatedFirstRide = await Ride.findById(createdRides[0]._id).populate(RIDE_POPULATE);
+      
+      return res.status(201).json({
+        message: `Successfully scheduled ${createdRides.length} recurring rides!`,
+        ride: populatedFirstRide // Return the first one for immediate UI redirection
+      });
+    } else {
+      // Normal single ride creation
+      const ride = await Ride.create(req.body);
+      const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
+      await scheduleRideLifecycleNotifications(populatedRide);
+
+      return res.status(201).json({
+        message: "Ride created successfully",
+        ride: populatedRide
+      });
+    }
 
   } catch (error) {
     res.status(500).json({
@@ -219,6 +277,26 @@ router.get("/:id", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error fetching ride",
+      error: error.message
+    });
+  }
+});
+
+// PUBLIC TRACKING INFO (NO AUTH REQUIRED)
+router.get("/track/:id", async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id)
+      .select("fromLocation toLocation fromCoords toCoords time createdBy seatsAvailable status")
+      .populate({ path: "createdBy", select: "name gender role" });
+
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+
+    res.status(200).json(ride);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching public tracking info",
       error: error.message
     });
   }

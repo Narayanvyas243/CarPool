@@ -15,6 +15,8 @@ import RideHistory from "./pages/RideHistory";
 import Settings from "./pages/Settings";
 import ForgotPassword from "./pages/ForgotPassword";
 import Safety from "./pages/Safety";
+import RideRequestBoard from "./pages/RideRequestBoard";
+import PublicTrack from "./pages/PublicTrack";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -41,13 +43,18 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/track/:id" element={<PublicTrack />} />
+
+                {/* Protected Routes */}
+                <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/create-ride" element={<ProtectedRoute><CreateRide /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                <Route path="/board" element={<ProtectedRoute><RideRequestBoard /></ProtectedRoute>} />
                 <Route path="/ride/:id" element={<ProtectedRoute><RideDetails /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><RideHistory /></ProtectedRoute>} />

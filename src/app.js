@@ -37,6 +37,12 @@ app.use("/api/notifications", notificationRoutes);
 const feedbackRoutes = require("./routes/feedbackRoutes");
 app.use("/api/feedbacks", feedbackRoutes);
 
+const chatRoutes = require("./routes/chatRoutes");
+app.use("/api/chat", chatRoutes);
+
+const rideRequestPostRoutes = require("./routes/rideRequestPostRoutes");
+app.use("/api/ride-requests", rideRequestPostRoutes);
+
 // Test route
 app.get("/", (req, res) => {
   res.send("SmartPool Backend Running");

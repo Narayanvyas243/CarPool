@@ -37,7 +37,7 @@ const initSocket = (httpServer) => {
       socket.userId = String(userId);
     });
 
-    // Join a private room for a specific ride to share locations
+    // Join a private room for a specific ride to share locations and chat
     socket.on("join-ride", (rideId) => {
       if (!rideId) return;
       const room = `ride:${rideId}`;
@@ -45,19 +45,43 @@ const initSocket = (httpServer) => {
       console.log(`[Socket] User ${socket.userId || socket.id} joined room ${room}`);
     });
 
-    // Broadcast location to everyone else in the ride room
+    // Chat events
+    socket.on("chat:send", ({ rideId, message }) => {
+      if (!rideId || !message) return;
+      const room = `ride:${rideId}`;
+      // Broadcast to everyone in the room EXCEPT the sender
+      socket.to(room).emit("chat:receive", message);
+    });
+
+    // Public Tracking Room
+    socket.on("join-public-tracking", (rideId) => {
+      if (!rideId) return;
+      const room = `public-tracking:${rideId}`;
+      socket.join(room);
+      console.log(`[Socket] Guest joined public tracking room ${room}`);
+    });
+
+    // Broadcast location to everyone else in the ride room AND public tracking room
     socket.on("location-update", async ({ rideId, lat, lng, role }) => {
       if (!rideId || !lat || !lng) return;
       const room = `ride:${rideId}`;
+      const publicRoom = `public-tracking:${rideId}`;
       
-      // Send to everyone in the room EXCEPT the sender
-      socket.to(room).emit("location:received", {
+      const payload = {
         userId: socket.userId,
         lat,
         lng,
         role, // 'driver' or 'passenger'
         timestamp: new Date()
-      });
+      };
+
+      // Send to everyone in the room EXCEPT the sender
+      socket.to(room).emit("location:received", payload);
+      
+      // Also send to public tracking room if it's the driver
+      if (role === 'driver') {
+        socket.to(publicRoom).emit("location-update", payload);
+      }
 
       // --- NEW: Automatic Ride Completion Prompt Logic (with Throttling) ---
       try {

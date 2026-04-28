@@ -33,9 +33,19 @@ const CreateRide = () => {
   const { user } = useAuth();
   const [genderPreference, setGenderPreference] = useState("any");
   const [upiId, setUpiId] = useState(user?.upiId || "");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDays, setRecurringDays] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  const toggleDay = (day: string) => {
+    setRecurringDays(prev => 
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
 
   const handleCreateRide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +114,9 @@ const CreateRide = () => {
           price: parseInt(price, 10),
           genderPreference,
           upiId: upiId || user?.upiId,
-          createdBy: user.id
+          createdBy: user.id,
+          isRecurring,
+          recurringDays
         })
       });
 
@@ -261,6 +273,47 @@ const CreateRide = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Recurring Toggle */}
+              <div className="space-y-3 p-3 bg-secondary/30 rounded-xl border border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-bold text-foreground">Recurring Ride?</label>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Automatically create this ride every week for the next 4 weeks.</p>
+                  </div>
+                  <Button 
+                    type="button"
+                    variant={isRecurring ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsRecurring(!isRecurring)}
+                    className={isRecurring ? "bg-primary text-primary-foreground" : ""}
+                  >
+                    {isRecurring ? "Yes" : "No"}
+                  </Button>
+                </div>
+                
+                {isRecurring && (
+                  <div className="pt-2 border-t border-border/50 animate-fade-in">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Select Days</label>
+                    <div className="flex flex-wrap gap-2">
+                      {daysOfWeek.map(day => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleDay(day)}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-all ${
+                            recurringDays.includes(day) 
+                              ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
+                              : 'bg-background text-muted-foreground border-border hover:bg-secondary'
+                          }`}
+                        >
+                          {day.substring(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Seats & Price */}
