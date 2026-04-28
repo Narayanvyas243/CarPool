@@ -150,7 +150,7 @@ const Profile = () => {
 
   const menuItems = [
     { icon: History, label: "Ride History", path: "/history" },
-    { icon: QrCode, label: "Payment UPI ID", path: "/payment-qr" },
+    { icon: QrCode, label: "Payment UPI ID", path: "#payment-qr" },
     { icon: Shield, label: "Safety & Privacy", path: "/safety-privacy" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
@@ -260,7 +260,7 @@ const Profile = () => {
         </div>
 
         {/* Payment Details */}
-        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250 fill-mode-both">
+        <div className="px-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250 fill-mode-both" id="payment-qr">
           <div className="premium-card rounded-3xl p-5 bg-card/50 backdrop-blur-sm border-border/40">
             <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Payment UPI ID</h2>
             <div className="flex items-center gap-4 group">
@@ -460,6 +460,16 @@ const Profile = () => {
                 onClick={() => {
                   if (item.path.startsWith('/')) {
                     navigate(item.path);
+                  } else if (item.path.startsWith('#')) {
+                    const element = document.getElementById(item.path.substring(1));
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // Add a brief highlight effect
+                      element.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'rounded-3xl', 'transition-all');
+                      setTimeout(() => {
+                        element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+                      }, 2000);
+                    }
                   } else {
                     toast({ title: "Coming soon!", description: `${item.label} feature is under development` });
                   }
