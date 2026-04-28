@@ -282,15 +282,26 @@ const CreateRide = () => {
                     <label className="text-sm font-bold text-foreground">Recurring Ride?</label>
                     <p className="text-[10px] text-muted-foreground mt-0.5">Automatically create this ride every week for the next 4 weeks.</p>
                   </div>
-                  <Button 
-                    type="button"
-                    variant={isRecurring ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setIsRecurring(!isRecurring)}
-                    className={isRecurring ? "bg-primary text-primary-foreground" : ""}
-                  >
-                    {isRecurring ? "Yes" : "No"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button"
+                      variant={isRecurring ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsRecurring(true)}
+                      className={isRecurring ? "bg-primary text-primary-foreground shadow-md" : "bg-background"}
+                    >
+                      Yes
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant={!isRecurring ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsRecurring(false)}
+                      className={!isRecurring ? "bg-secondary text-foreground border-transparent shadow-sm" : "bg-background"}
+                    >
+                      No
+                    </Button>
+                  </div>
                 </div>
                 
                 {isRecurring && (
