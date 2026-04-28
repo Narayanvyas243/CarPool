@@ -165,14 +165,14 @@ const RideDetails = () => {
     }
   };
 
-  const isOwner = user && ride?.createdBy && (ride.createdBy._id || ride.createdBy) === user.id;
+  const isOwner = user && ride?.createdBy && String(ride.createdBy._id || ride.createdBy) === String(user.id);
 
   const hasBeenAccepted = user && (ride?.requests || []).some((req: any) => 
-    (req.requester?._id || req.requester) === user.id && req.status === "accepted"
+    String(req.requester?._id || req.requester) === String(user.id) && req.status === "accepted"
   );
   
   const myRequest = user && (ride?.requests || []).find((req: any) => 
-    (req.requester?._id || req.requester) === user.id
+    String(req.requester?._id || req.requester) === String(user.id)
   );
 
   const isAlreadyOnboarded = myRequest?.isOnboarded;
@@ -350,10 +350,14 @@ const RideDetails = () => {
     }
   };
 
-  const handleConfirmCompletion = async (reqId?: string, forcePassengerId?: string) => {
+  const handleConfirmCompletion = async (reqId?: any, forcePassengerId?: string) => {
     if (!user) return;
-    const requestId = reqId || autoPromptRequestId || myRequest?._id;
-    if (!requestId) return;
+    const safeReqId = typeof reqId === 'string' ? reqId : undefined;
+    const requestId = safeReqId || autoPromptRequestId || myRequest?._id;
+    if (!requestId) {
+      toast({ title: "Error", description: "Request ID missing. Please refresh.", variant: "destructive" });
+      return;
+    }
 
     setIsConfirmingCompletion(true);
     try {

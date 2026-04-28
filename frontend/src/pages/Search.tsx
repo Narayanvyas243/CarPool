@@ -23,10 +23,13 @@ const Search = () => {
   const toQuery = searchParams.get("to") || "";
 
   useEffect(() => {
-    if (!fromQuery && !toQuery) return;
-
     setIsLoading(true);
-    fetch(getApiUrl(`/api/rides/search?from=${encodeURIComponent(fromQuery)}&to=${encodeURIComponent(toQuery)}`))
+    
+    const fetchUrl = (fromQuery || toQuery) 
+      ? `/api/rides/search?from=${encodeURIComponent(fromQuery)}&to=${encodeURIComponent(toQuery)}`
+      : `/api/rides/all`;
+
+    fetch(getApiUrl(fetchUrl))
       .then(res => res.json())
       .then(data => {
         if (data.rides) {
@@ -105,8 +108,12 @@ const Search = () => {
           <Tabs defaultValue="list" className="w-full space-y-6">
             <div className="flex items-center justify-between px-1">
               <div className="space-y-0.5">
-                <h2 className="text-xl font-bold text-foreground tracking-tight">Search Results</h2>
-                <p className="text-xs text-muted-foreground font-medium">{rides.length} rides found for your route</p>
+                <h2 className="text-xl font-bold text-foreground tracking-tight">
+                  {fromQuery || toQuery ? "Search Results" : "Available Rides"}
+                </h2>
+                <p className="text-xs text-muted-foreground font-medium">
+                  {rides.length} {fromQuery || toQuery ? "rides found for your route" : "rides available"}
+                </p>
               </div>
               <TabsList className="bg-secondary/50 p-1 rounded-2xl h-11 border border-border/50 backdrop-blur-sm">
                 <TabsTrigger value="list" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg h-9 px-4 font-bold text-xs transition-all">
