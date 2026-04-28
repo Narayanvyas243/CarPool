@@ -30,12 +30,12 @@ const CreateRide = () => {
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState("4");
   const [price, setPrice] = useState("");
+  const { user } = useAuth();
   const [genderPreference, setGenderPreference] = useState("any");
   const [upiId, setUpiId] = useState(user?.upiId || "");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const handleCreateRide = async (e: React.FormEvent) => {
     e.preventDefault();
