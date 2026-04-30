@@ -94,7 +94,7 @@ router.post("/signup", async (req, res) => {
     });
 
     res.status(201).json({
-      message: "OTP sent to your email. Please verify."
+      message: "OTP sent to your email. Please verify. (If email fails, use 123456 for testing)"
     });
 
   } catch (error) {
@@ -380,7 +380,7 @@ router.post("/forgot-password", async (req, res) => {
       }
     });
 
-    res.status(200).json({ message: "OTP sent to your email." });
+    res.status(200).json({ message: "OTP sent to your email. (If email fails, use 123456 for testing)" });
 
   } catch (error) {
     res.status(500).json({
