@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getApiUrl } from "../apiConfig";
 
 interface User {
   id: string;
@@ -24,6 +25,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const savedUser = localStorage.getItem("carpool_user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(getApiUrl(`/api/users/${user.id}`))
+        .then(res => res.json())
+        .then(data => {
+          if (data._id) {
+            const updatedUser = {
+              id: data._id,
+              name: data.name,
+              email: data.email,
+              role: data.role,
+              gender: data.gender,
+              phone: data.phone,
+              upiId: data.upiId
+            };
+            // Only update if there's a difference to avoid infinite loops
+            if (JSON.stringify(updatedUser) !== JSON.stringify(user)) {
+              localStorage.setItem("carpool_user", JSON.stringify(updatedUser));
+              setUser(updatedUser);
+            }
+          }
+        })
+        .catch(err => console.error("Failed to refresh user profile:", err));
+    }
+  }, []);
 
   const login = (userData: User) => {
     localStorage.setItem("carpool_user", JSON.stringify(userData));
