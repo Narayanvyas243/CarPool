@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl } from "../apiConfig";
 import MapPicker from "@/components/MapPicker";
+import { calculateDistance, getFairPriceEstimate } from "@/utils/fareUtils";
 
 const CreateRide = () => {
   const [source, setSource] = useState("");
@@ -46,6 +47,10 @@ const CreateRide = () => {
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     );
   };
+
+  const suggestedPrice = fromCoords && toCoords 
+    ? getFairPriceEstimate(calculateDistance(fromCoords.lat, fromCoords.lng, toCoords.lat, toCoords.lng))
+    : null;
 
   const handleCreateRide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,18 +349,32 @@ const CreateRide = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Price per seat</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-foreground">Price per seat</label>
+                    {suggestedPrice && (
+                      <span 
+                        className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition-colors"
+                        onClick={() => setPrice(suggestedPrice.toString())}
+                        title="Click to apply"
+                      >
+                        Smart Fare: ₹{suggestedPrice}
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       type="number"
                       min="0"
-                      placeholder="50"
+                      placeholder={suggestedPrice ? suggestedPrice.toString() : "50"}
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       className="pl-11 h-12 bg-secondary border-0"
                     />
                   </div>
+                  {suggestedPrice && (
+                    <p className="text-[9px] text-muted-foreground px-1 font-medium">Tap the Smart Fare badge above to apply.</p>
+                  )}
                 </div>
               </div>
               
