@@ -157,13 +157,9 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
               });
 
             // UX Improvement: Destinations don't need the precision modal
-            if (type === 'dropoff') {
-              setTimeout(() => {
-                 handleConfirmDirectly({ lat, lng });
-              }, 300);
-            } else {
-              setIsConfirming(true); // Ask for confirmation only for pickups
-            }
+            setTimeout(() => {
+               handleConfirmDirectly({ lat, lng });
+            }, 300);
           });
 
           // Final invalidation to be sure
@@ -267,12 +263,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         markerInstance.current = L.marker([campusOverride.lat, campusOverride.lng], { icon: customIcon }).addTo(mapInstance.current);
       }
 
-      // UX Improvement: Auto-confirm campus selection for dropoff
-      if (type === 'dropoff') {
-        setTimeout(() => handleConfirmDirectly(campusOverride), 500);
-      } else {
-        setIsConfirming(true);
-      }
+      // UX Improvement: Auto-confirm campus selection
+      setTimeout(() => handleConfirmDirectly(campusOverride, campusOverride.name), 500);
       return;
     }
 
@@ -301,7 +293,9 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         setCoords({ lat, lng: lon });
         const namePart = data[0].display_name.split(',')[0];
         setSelectedName(namePart); // Preserve the specific name found in search
-        setIsConfirming(true);
+        
+        setTimeout(() => handleConfirmDirectly({ lat, lng: lon }, namePart), 500);
+        
         mapInstance.current.setView([lat, lon], 15);
         
         const customIcon = L.icon({
@@ -539,7 +533,9 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                   setCoords({ lat: loc.lat, lng: loc.lng });
                   setSearchQuery(loc.name);
                   setSelectedName(loc.name); // Lock the name
-                  setIsConfirming(true);
+                  
+                  setTimeout(() => handleConfirmDirectly(loc, loc.name), 500);
+                  
                   if (mapInstance.current) {
                     mapInstance.current.setView([loc.lat, loc.lng], 15);
                     const L = (window as any).L;
