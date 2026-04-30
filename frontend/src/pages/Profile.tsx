@@ -33,7 +33,7 @@ import { getApiUrl } from "../apiConfig";
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [stats, setStats] = useState({ ridesOffered: 0, ridesTaken: 0 });
   const [dashboardData, setDashboardData] = useState<{ 
     createdRides: any[]; 
@@ -115,6 +115,9 @@ const Profile = () => {
       if (res.ok) {
         toast({ title: "UPI ID Updated", description: "Your payment details have been saved." });
         setProfileData(data.user);
+        if (user) {
+          updateUser({ ...user, upiId: data.user.upiId });
+        }
       } else {
         throw new Error(data.message);
       }

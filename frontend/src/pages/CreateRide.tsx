@@ -41,10 +41,10 @@ const CreateRide = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user?.upiId && !upiId) {
+    if (user?.upiId) {
       setUpiId(user.upiId);
     }
-  }, [user, upiId]);
+  }, [user?.upiId]);
 
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 

@@ -7,6 +7,7 @@ interface User {
   role: string;
   gender?: string;
   phone?: string;
+  upiId?: string;
 }
 
 interface AuthContextType {
