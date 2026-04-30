@@ -14,20 +14,46 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distance in km
-  return d;
+  const straightDistance = R * c; // Distance in km
+  
+  // Apply a heuristic road multiplier based on region topography
+  let multiplier = 1.35; // Default Dehradun winding factor
+  
+  // Mussoorie or high altitude areas (latitude > 30.43 approx)
+  const isHillRoute = lat1 > 30.43 || lat2 > 30.43;
+  
+  if (isHillRoute) {
+    multiplier = 2.5; // Mountain roads are very circuitous
+  } else if (straightDistance < 5) {
+    multiplier = 1.2; // Short local routes are more direct
+  } else {
+    multiplier = 1.4; // Cross-city routes
+  }
+
+  return straightDistance * multiplier;
 };
 
 /**
  * Estimates a "Fair Price" for the ride based on distance.
- * This is used for comparison with the driver's set price.
+ * Uses a tiered structure for realistic carpool pricing.
  */
 export const getFairPriceEstimate = (distanceKm: number): number => {
-  // Car-based calculation
-  const baseFare = 50; // Higher base fare for cars
-  const perKmFare = 12; // Standard student-friendly car rate per km
-  const estimate = baseFare + (distanceKm * perKmFare);
-  return Math.max(60, Math.round(estimate)); // Minimum fare of 60
+  let estimate = 0;
+  
+  if (distanceKm < 5) {
+    // Short routes (e.g., Bidholi to Kandoli)
+    estimate = 20 + (distanceKm * 10);
+  } else if (distanceKm < 15) {
+    // Medium routes (e.g., Bidholi to Prem Nagar)
+    estimate = 30 + (distanceKm * 12);
+  } else {
+    // Long routes (e.g., Bidholi to Clock Tower, Railway Station, Mussoorie)
+    estimate = 40 + (distanceKm * 12);
+  }
+
+  // Round to nearest 10 for cleaner numbers (e.g., 138 -> 140)
+  const rounded = Math.round(estimate / 10) * 10;
+  return Math.max(50, rounded); // Minimum fare of 50
 };
 
 /**
