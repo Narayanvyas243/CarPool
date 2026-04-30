@@ -23,10 +23,11 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
  * This is used for comparison with the driver's set price.
  */
 export const getFairPriceEstimate = (distanceKm: number): number => {
-  const baseFare = 30;
-  const perKmFare = 8; // Student-friendly rate
+  // Car-based calculation
+  const baseFare = 50; // Higher base fare for cars
+  const perKmFare = 12; // Standard student-friendly car rate per km
   const estimate = baseFare + (distanceKm * perKmFare);
-  return Math.max(50, Math.round(estimate));
+  return Math.max(60, Math.round(estimate)); // Minimum fare of 60
 };
 
 /**
