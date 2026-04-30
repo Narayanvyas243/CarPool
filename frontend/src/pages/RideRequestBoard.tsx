@@ -127,10 +127,18 @@ const RideRequestBoard = () => {
           <div className="flex items-center gap-2">
             <Button 
               variant={showFilters ? "default" : "outline"}
-              className="rounded-full h-12 w-12 p-0 shrink-0"
+              className="rounded-full h-12 px-4 shadow-lg shadow-primary/10 shrink-0 font-semibold"
               onClick={() => setShowFilters(!showFilters)}
             >
-              {showFilters ? <X className="h-5 w-5" /> : <Filter className="h-5 w-5" />}
+              {showFilters ? (
+                <>
+                  <X className="h-4 w-4 mr-2" /> Close
+                </>
+              ) : (
+                <>
+                  <Filter className="h-4 w-4 mr-2" /> Filter
+                </>
+              )}
             </Button>
             <Button 
               className="rounded-full h-12 px-6 shadow-lg shadow-primary/20"
