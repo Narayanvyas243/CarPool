@@ -79,23 +79,23 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    // Send OTP Email asynchronously to prevent hanging
-    sendEmail(email, otp).catch(async (emailErr) => {
+    // Send OTP Email
+    try {
+      await sendEmail(email, otp);
+      res.status(201).json({
+        message: "OTP sent to your email. Please verify."
+      });
+    } catch (emailErr) {
       console.error("Email error:", emailErr);
-      try {
-        const userToUpdate = await User.findOne({ email });
-        if (userToUpdate) {
-          userToUpdate.otp = "123456";
-          await userToUpdate.save();
-        }
-      } catch (err) {
-        console.error("Error updating fallback OTP:", err);
+      const userToUpdate = existingUser || await User.findOne({ email });
+      if (userToUpdate) {
+        userToUpdate.otp = "123456";
+        await userToUpdate.save();
       }
-    });
-
-    res.status(201).json({
-      message: "OTP sent to your email. Please verify. (If email fails, use 123456 for testing)"
-    });
+      res.status(201).json({
+        message: "OTP sent. (If email fails, use 123456 for testing)"
+      });
+    }
 
   } catch (error) {
     res.status(500).json({
@@ -361,26 +361,21 @@ router.post("/forgot-password", async (req, res) => {
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
     await user.save();
 
-    // Send OTP Email asynchronously to prevent hanging
-    sendEmail(
-      email, 
-      otp, 
-      "SmartPool Password Reset", 
-      `Your password reset OTP is ${otp}. It will expire in 5 minutes.`
-    ).catch(async (emailErr) => {
+    // Send OTP Email
+    try {
+      await sendEmail(
+        email, 
+        otp, 
+        "SmartPool Password Reset", 
+        `Your password reset OTP is ${otp}. It will expire in 5 minutes.`
+      );
+      res.status(200).json({ message: "OTP sent to your email" });
+    } catch (emailErr) {
       console.error("Email error:", emailErr);
-      try {
-        const userToUpdate = await User.findOne({ email });
-        if (userToUpdate) {
-          userToUpdate.otp = "123456";
-          await userToUpdate.save();
-        }
-      } catch (err) {
-        console.error("Error updating fallback OTP:", err);
-      }
-    });
-
-    res.status(200).json({ message: "OTP sent to your email. (If email fails, use 123456 for testing)" });
+      user.otp = "123456";
+      await user.save();
+      res.status(200).json({ message: "OTP sent. (If email fails, use 123456 for testing)" });
+    }
 
   } catch (error) {
     res.status(500).json({
