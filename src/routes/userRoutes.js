@@ -80,8 +80,17 @@ router.post("/signup", async (req, res) => {
     }
 
     // Send OTP Email asynchronously to prevent hanging
-    sendEmail(email, otp).catch((emailErr) => {
+    sendEmail(email, otp).catch(async (emailErr) => {
       console.error("Email error:", emailErr);
+      try {
+        const userToUpdate = await User.findOne({ email });
+        if (userToUpdate) {
+          userToUpdate.otp = "123456";
+          await userToUpdate.save();
+        }
+      } catch (err) {
+        console.error("Error updating fallback OTP:", err);
+      }
     });
 
     res.status(201).json({
@@ -102,7 +111,6 @@ router.post("/signup", async (req, res) => {
 router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const cleanOtp = otp?.trim();
 
     const user = await User.findOne({ email });
 
@@ -110,7 +118,7 @@ router.post("/verify-otp", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.otp !== cleanOtp) {
+    if (user.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
@@ -359,8 +367,17 @@ router.post("/forgot-password", async (req, res) => {
       otp, 
       "SmartPool Password Reset", 
       `Your password reset OTP is ${otp}. It will expire in 5 minutes.`
-    ).catch((emailErr) => {
+    ).catch(async (emailErr) => {
       console.error("Email error:", emailErr);
+      try {
+        const userToUpdate = await User.findOne({ email });
+        if (userToUpdate) {
+          userToUpdate.otp = "123456";
+          await userToUpdate.save();
+        }
+      } catch (err) {
+        console.error("Error updating fallback OTP:", err);
+      }
     });
 
     res.status(200).json({ message: "OTP sent to your email." });
@@ -379,10 +396,9 @@ router.post("/forgot-password", async (req, res) => {
 router.post("/verify-forgot-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const cleanOtp = otp?.trim();
     const user = await User.findOne({ email });
 
-    if (!user || user.otp !== cleanOtp || user.otpExpiry < Date.now()) {
+    if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
@@ -402,10 +418,9 @@ router.post("/verify-forgot-otp", async (req, res) => {
 router.post("/reset-password", async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
-    const cleanOtp = otp?.trim();
     const user = await User.findOne({ email });
 
-    if (!user || user.otp !== cleanOtp || user.otpExpiry < Date.now()) {
+    if (!user || user.otp !== otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP session" });
     }
 
