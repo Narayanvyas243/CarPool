@@ -83,10 +83,7 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
   if (CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN) {
     try {
       const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        requireTLS: true,
+        service: 'gmail',
         auth: {
           type: 'OAuth2',
           user: EMAIL_USER,
@@ -115,10 +112,7 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
 
   // --- PATH 3: Basic SMTP (Last Resort) ---
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    service: 'gmail',
     auth: {
       user: EMAIL_USER,
       pass: process.env.EMAIL_PASS
