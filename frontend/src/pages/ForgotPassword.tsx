@@ -163,9 +163,10 @@ const ForgotPassword = () => {
                   <button 
                     type="button" 
                     onClick={handleSendOtp}
-                    className="text-xs text-muted-foreground hover:text-primary underline"
+                    disabled={isLoading}
+                    className="text-xs text-muted-foreground hover:text-primary underline disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Didn't receive code? Resend
+                    {isLoading ? "Sending..." : "Didn't receive code? Resend"}
                   </button>
                 </div>
               </form>

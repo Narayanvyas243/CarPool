@@ -56,32 +56,34 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
   // --- PATH 1: Resend (Best for Deliverability) ---
   if (RESEND_API_KEY) {
     try {
+      console.log(`[Email] Attempting Resend for ${email}...`);
       const resend = new Resend(RESEND_API_KEY);
       const { data, error } = await resend.emails.send({
         from: 'SmartPool <onboarding@resend.dev>',
         to: [email],
         reply_to: EMAIL_USER || 'support@smartpool.com',
         subject: subject,
-        text: message, // Removed redundant expiration string
+        text: message,
         html: htmlContent,
       });
 
       if (error) {
-        console.warn(`[Email] Resend error (likely Sandbox restriction): ${error.message}. Falling back...`);
-        // Fall through to other methods...
-      } else {
+        console.warn(`[Email] Resend error: ${error.message}.`);
+        // If it's a specific "not authorized" error for Sandbox, we fall back.
+        // Otherwise, we might want to throw to avoid double sending if it was just a timeout.
+      } else if (data && data.id) {
         console.log("[Email] Resend Success:", data.id);
-        return;
+        return; // SUCCESS - Exit
       }
     } catch (err) {
       console.error("[Email] Resend request failed:", err.message);
-      // Fall through...
     }
   }
 
   // --- PATH 2: Gmail OAuth2 (Highly Reliable) ---
   if (CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN) {
     try {
+      console.log(`[Email] Attempting OAuth2 for ${email}...`);
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -103,35 +105,40 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
       });
 
       console.log("[Email] OAuth2 Success:", info.messageId);
-      return;
+      return; // SUCCESS - Exit
     } catch (error) {
       console.error("[Email] OAuth2 Failed:", error.message);
-      // Fall through...
     }
   }
 
   // --- PATH 3: Basic SMTP (Last Resort) ---
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
-  });
-
-  try {
-    const info = await transporter.sendMail({
-      from: `"SmartPool Security" <${EMAIL_USER}>`,
-      to: email,
-      subject: subject,
-      text: message,
-      html: htmlContent,
+  if (EMAIL_USER && process.env.EMAIL_PASS) {
+    console.log(`[Email] Attempting Basic SMTP for ${email}...`);
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
     });
-    console.log("[Email] SMTP Success:", info.messageId);
-  } catch (error) {
-    console.error("[Email] SMTP Failed:", error.message);
-    throw error;
+
+    try {
+      const info = await transporter.sendMail({
+        from: `"SmartPool Security" <${EMAIL_USER}>`,
+        to: email,
+        subject: subject,
+        text: message,
+        html: htmlContent,
+      });
+      console.log("[Email] SMTP Success:", info.messageId);
+      return; // SUCCESS - Exit
+    } catch (error) {
+      console.error("[Email] SMTP Failed:", error.message);
+      throw error;
+    }
   }
+  
+  console.error("[Email] All email methods failed or were not configured.");
 };
 
 module.exports = sendEmail;

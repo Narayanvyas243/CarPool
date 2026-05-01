@@ -79,23 +79,16 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    // Send OTP Email
-    try {
-      await sendEmail(email, otp);
-      res.status(201).json({
-        message: "OTP sent to your email. Please verify."
-      });
-    } catch (emailErr) {
-      console.error("Email error:", emailErr);
-      const userToUpdate = existingUser || await User.findOne({ email });
-      if (userToUpdate) {
-        userToUpdate.otp = "123456";
-        await userToUpdate.save();
-      }
-      res.status(201).json({
-        message: "OTP sent. (If email fails, use 123456 for testing)"
-      });
-    }
+    // Send OTP Email (Asynchronous)
+    sendEmail(email, otp).catch(err => {
+      console.error("Background Signup Email Error:", err);
+      // We don't update the user to 123456 here because the response is already sent.
+      // But we log it for debugging.
+    });
+
+    res.status(201).json({
+      message: "OTP sent to your email. Please verify."
+    });
 
   } catch (error) {
     res.status(500).json({
@@ -361,21 +354,17 @@ router.post("/forgot-password", async (req, res) => {
     user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
     await user.save();
 
-    // Send OTP Email
-    try {
-      await sendEmail(
-        email, 
-        otp, 
-        "SmartPool Password Reset", 
-        `Your password reset OTP is ${otp}. It will expire in 5 minutes.`
-      );
-      res.status(200).json({ message: "OTP sent to your email" });
-    } catch (emailErr) {
-      console.error("Email error:", emailErr);
-      user.otp = "123456";
-      await user.save();
-      res.status(200).json({ message: "OTP sent. (If email fails, use 123456 for testing)" });
-    }
+    // Send OTP Email (Asynchronous)
+    sendEmail(
+      email, 
+      otp, 
+      "SmartPool Password Reset", 
+      `Your password reset OTP is ${otp}. It will expire in 5 minutes.`
+    ).catch(err => {
+      console.error("Background Forgot Password Email Error:", err);
+    });
+
+    res.status(200).json({ message: "OTP sent to your email" });
 
   } catch (error) {
     res.status(500).json({
