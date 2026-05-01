@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 const { Resend } = require('resend');
+const https = require('https');
 
 const sendEmail = async (email, otp, subject = "SmartPool Verification Code", message = `Your verification code is ${otp}.`) => {
   const EMAIL_USER = process.env.EMAIL_USER;
@@ -52,6 +53,56 @@ const sendEmail = async (email, otp, subject = "SmartPool Verification Code", me
     </body>
     </html>
   `;
+
+  const BREVO_API_KEY = process.env.BREVO_API_KEY;
+  const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || EMAIL_USER;
+  const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME || 'SmartPool Security';
+
+  // --- PATH 0: Brevo API (New Primary Path) ---
+  if (BREVO_API_KEY && BREVO_SENDER_EMAIL) {
+    try {
+      console.log(`[Email] Attempting Brevo for ${email}...`);
+      const postData = JSON.stringify({
+        sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
+        to: [{ email: email }],
+        subject: subject,
+        htmlContent: htmlContent,
+        textContent: message
+      });
+
+      const options = {
+        hostname: 'api.brevo.com',
+        path: '/v3/smtp/email',
+        method: 'POST',
+        headers: {
+          'api-key': BREVO_API_KEY,
+          'content-type': 'application/json',
+          'accept': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const brevoResponse = await new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          let data = '';
+          res.on('data', (chunk) => data += chunk);
+          res.on('end', () => resolve({ statusCode: res.statusCode, data: JSON.parse(data || '{}') }));
+        });
+        req.on('error', (err) => reject(err));
+        req.write(postData);
+        req.end();
+      });
+
+      if (brevoResponse.statusCode >= 200 && brevoResponse.statusCode < 300) {
+        console.log("[Email] Brevo Success:", brevoResponse.data.messageId || "Sent");
+        return; // SUCCESS - Exit
+      } else {
+        console.warn(`[Email] Brevo API error (${brevoResponse.statusCode}):`, brevoResponse.data.message || "Unknown error");
+      }
+    } catch (err) {
+      console.error("[Email] Brevo request failed:", err.message);
+    }
+  }
 
   // --- PATH 1: Resend (Best for Deliverability) ---
   if (RESEND_API_KEY) {
