@@ -180,7 +180,7 @@ const RideDetails = () => {
 
   // Determine role for tracking
   const role = isOwner ? 'driver' : (hasBeenAccepted ? 'passenger' : null);
-  const isTrackingActive = !!(role && !isAlreadyOnboarded);
+  const isTrackingActive = !!(role && !myRequest?.isCompleted);
   
   // Memoize map locations to prevent RideMap from re-initializing unnecessarily
   const mapFrom = useMemo(() => ({
@@ -794,7 +794,7 @@ const RideDetails = () => {
           </div>
         )}
 
-        {!isOwner && myRequest?.isOnboarded && !myRequest?.isCompleted && (
+        {!isOwner && myRequest?.isOnboarded && !myRequest?.isCompleted && distanceToDestination !== null && distanceToDestination < 500 && (
           <Card className="border-0 shadow-soft animate-fade-in border-l-4 border-l-success" style={{ animationDelay: "0.13s" }}>
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
@@ -817,7 +817,7 @@ const RideDetails = () => {
           </Card>
         )}
 
-        {isOwner && passengers.some((p: any) => p.isOnboarded && !p.isCompleted) && (
+        {isOwner && distanceToDestination !== null && distanceToDestination < 500 && passengers.some((p: any) => p.isOnboarded && !p.isCompleted) && (
           <Card className="border-0 shadow-soft animate-fade-in border-l-4 border-l-primary" style={{ animationDelay: "0.14s" }}>
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-4">
