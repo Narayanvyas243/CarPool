@@ -28,51 +28,54 @@ import RideCard, { RideData } from "@/components/RideCard";
 
 const Home = () => {
   const [rides, setRides] = useState<RideData[]>([]);
+  const [suggestions, setSuggestions] = useState<RideData[]>([]);
   const { user } = useAuth();
   const [stats, setStats] = useState({ ridesTaken: 0, activeRides: 0 });
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const mapRideData = (r: any, userId?: string) => {
+    const dateObj = new Date(r.time);
+    return {
+      id: r._id,
+      driverName: r.createdBy?.name || "Unknown",
+      driverRole: r.createdBy?.role || "student",
+      isVerified: true, 
+      source: r.fromLocation,
+      destination: r.toLocation,
+      date: dateObj.toLocaleDateString(),
+      time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      availableSeats: r.seatsAvailable,
+      totalSeats: r.totalSeats || 4,
+      pricePerSeat: r.price !== undefined ? r.price : 50,
+      driverGender: r.createdBy?.gender,
+      driverId: r.createdBy?._id || r.createdBy || "",
+      isPassenger: r.requests?.some((req: any) => 
+        (req.requester?._id === userId || req.requester === userId) && 
+        req.status === "accepted"
+      ),
+      genderPreference: r.genderPreference,
+      priceComparison: (() => {
+        if (!r.fromCoords || !r.toCoords || r.price === undefined) return null;
+        const distance = calculateDistance(
+          r.fromCoords.lat, r.fromCoords.lng,
+          r.toCoords.lat, r.toCoords.lng
+        );
+        const fairPrice = getFairPriceEstimate(distance);
+        return {
+          fairPrice,
+          status: getPriceStatus(r.price, fairPrice)
+        };
+      })()
+    };
+  };
 
   useEffect(() => {
     fetch(getApiUrl('/api/rides/all'))
       .then(res => res.json())
       .then(data => {
         if (data.rides) {
-          const mappedRides = data.rides.map((r: any) => {
-            const dateObj = new Date(r.time);
-            return {
-              id: r._id,
-              driverName: r.createdBy?.name || "Unknown",
-              driverRole: r.createdBy?.role || "student",
-              isVerified: true, 
-              source: r.fromLocation,
-              destination: r.toLocation,
-              date: dateObj.toLocaleDateString(),
-              time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              availableSeats: r.seatsAvailable,
-              totalSeats: r.totalSeats || 4,
-              pricePerSeat: r.price !== undefined ? r.price : 50,
-              driverGender: r.createdBy?.gender,
-              driverId: r.createdBy?._id || r.createdBy || "",
-              isPassenger: r.requests?.some((req: any) => 
-                (req.requester?._id === user?.id || req.requester === user?.id) && 
-                req.status === "accepted"
-              ),
-              genderPreference: r.genderPreference,
-              priceComparison: (() => {
-                if (!r.fromCoords || !r.toCoords || r.price === undefined) return null;
-                const distance = calculateDistance(
-                  r.fromCoords.lat, r.fromCoords.lng,
-                  r.toCoords.lat, r.toCoords.lng
-                );
-                const fairPrice = getFairPriceEstimate(distance);
-                return {
-                  fairPrice,
-                  status: getPriceStatus(r.price, fairPrice)
-                };
-              })()
-            };
-          });
+          const mappedRides = data.rides.map((r: any) => mapRideData(r, user?.id));
           setRides(mappedRides);
           setStats(prev => ({ ...prev, activeRides: data.rides.length }));
         }
@@ -91,6 +94,16 @@ const Home = () => {
           }
         })
         .catch(err => console.error(err));
+
+       fetch(getApiUrl(`/api/rides/suggestions/${user.id}`))
+        .then(res => res.json())
+        .then(data => {
+          if (data.suggestions) {
+            const mapped = data.suggestions.map((r: any) => mapRideData(r, user.id));
+            setSuggestions(mapped);
+          }
+        })
+        .catch(err => console.error("Error fetching suggestions:", err));
     }
   }, [user]);
 
@@ -135,6 +148,23 @@ const Home = () => {
           <SearchBar />
         </div>
 
+        {/* Suggested for You */}
+        {suggestions.length > 0 && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both space-y-4">
+            <div className="flex items-center gap-2 px-1">
+              <History className="h-4 w-4 text-primary" />
+              <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Suggested for You</h2>
+            </div>
+            <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide snap-x">
+              {suggestions.map((ride, index) => (
+                <div key={ride.id} className="min-w-[300px] snap-center">
+                  <RideCard ride={ride} onJoinRide={handleJoinRide} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* History List */}
         <div className="px-4 space-y-6">
           {/* Available Rides */}
@@ -175,7 +205,7 @@ const Home = () => {
               )}
             </div>
             {/* Deployment Verification Anchor */}
-            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.4</p>
+            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.5</p>
           </div>
         </div>
       </div>

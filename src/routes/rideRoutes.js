@@ -263,6 +263,67 @@ router.get("/dashboard/:userId", async (req, res) => {
   }
 });
 
+// SUGGESTED RIDES FOR USER
+router.get("/suggestions/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const now = new Date();
+
+    // 1. Get user's history (past accepted/completed requests)
+    const historyRides = await Ride.find({
+      "requests": { 
+        $elemMatch: { 
+          requester: userId, 
+          status: "accepted"
+        } 
+      }
+    }).limit(20).sort({ time: -1 });
+
+    if (historyRides.length === 0) {
+      return res.status(200).json({ suggestions: [] });
+    }
+
+    // 2. Aggregate routes (from, to)
+    const routeCounts = {};
+    historyRides.forEach(ride => {
+      const key = `${ride.fromLocation.toLowerCase().trim()}|${ride.toLocation.toLowerCase().trim()}`;
+      routeCounts[key] = (routeCounts[key] || 0) + 1;
+    });
+
+    // 3. Sort routes by frequency
+    const sortedRoutes = Object.entries(routeCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3) // Top 3 routes
+      .map(([key]) => key.split("|"));
+
+    // 4. Find upcoming rides matching these routes
+    const suggestions = [];
+    for (const [from, to] of sortedRoutes) {
+      const matchingRides = await Ride.find({
+        fromLocation: new RegExp(`^${from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i"),
+        toLocation: new RegExp(`^${to.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i"),
+        time: { $gt: now },
+        createdBy: { $ne: userId }, // Don't suggest their own rides
+        seatsAvailable: { $gt: 0 },
+        "requests.requester": { $ne: userId } // Don't suggest rides they are already in
+      }).populate(RIDE_POPULATE).limit(3);
+      
+      matchingRides.forEach(ride => {
+        if (!suggestions.some(s => s._id.toString() === ride._id.toString())) {
+          suggestions.push(ride);
+        }
+      });
+    }
+
+    res.status(200).json({
+      message: "Suggestions fetched successfully",
+      suggestions: suggestions.slice(0, 5)
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching suggestions", error: error.message });
+  }
+});
+
 // GET RIDE BY ID
 router.get("/:id", async (req, res) => {
   try {
