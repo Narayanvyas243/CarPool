@@ -74,7 +74,7 @@ const Home = () => {
     fetch(getApiUrl('/api/rides/all'))
       .then(res => res.json())
       .then(data => {
-        if (data.rides) {
+        if (data && data.rides && Array.isArray(data.rides)) {
           const mappedRides = data.rides.map((r: any) => mapRideData(r, user?.id));
           setRides(mappedRides);
           setStats(prev => ({ ...prev, activeRides: data.rides.length }));
@@ -86,7 +86,7 @@ const Home = () => {
        fetch(getApiUrl(`/api/rides/dashboard/${user.id}`))
         .then(res => res.json())
         .then(data => {
-          if (data.dashboard) {
+          if (data && data.dashboard) {
             setStats(prev => ({ 
               ...prev, 
               ridesTaken: data.dashboard.pastBookedRides?.length || 0 
@@ -98,7 +98,7 @@ const Home = () => {
        fetch(getApiUrl(`/api/rides/suggestions/${user.id}`))
         .then(res => res.json())
         .then(data => {
-          if (data.suggestions) {
+          if (data && data.suggestions && Array.isArray(data.suggestions)) {
             const mapped = data.suggestions.map((r: any) => mapRideData(r, user.id));
             setSuggestions(mapped);
           }
@@ -205,7 +205,7 @@ const Home = () => {
               )}
             </div>
             {/* Deployment Verification Anchor */}
-            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.5</p>
+            <p className="text-[8px] text-muted-foreground/30 uppercase tracking-widest mt-1">SmartPool Dashboard v2.6</p>
           </div>
         </div>
       </div>

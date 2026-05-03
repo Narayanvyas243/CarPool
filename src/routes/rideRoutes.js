@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Ride = require("../models/Ride");
 const User = require("../models/User");
 const { 
@@ -286,8 +287,12 @@ router.get("/suggestions/:userId", async (req, res) => {
     // 2. Aggregate routes (from, to)
     const routeCounts = {};
     historyRides.forEach(ride => {
-      const key = `${ride.fromLocation.toLowerCase().trim()}|${ride.toLocation.toLowerCase().trim()}`;
-      routeCounts[key] = (routeCounts[key] || 0) + 1;
+      const from = (ride.fromLocation || "").toLowerCase().trim();
+      const to = (ride.toLocation || "").toLowerCase().trim();
+      if (from && to) {
+        const key = `${from}|${to}`;
+        routeCounts[key] = (routeCounts[key] || 0) + 1;
+      }
     });
 
     // 3. Sort routes by frequency
@@ -299,6 +304,7 @@ router.get("/suggestions/:userId", async (req, res) => {
     // 4. Find upcoming rides matching these routes
     const suggestions = [];
     for (const [from, to] of sortedRoutes) {
+      if (!from || !to) continue;
       const matchingRides = await Ride.find({
         fromLocation: new RegExp(`^${from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i"),
         toLocation: new RegExp(`^${to.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, "i"),
@@ -309,7 +315,7 @@ router.get("/suggestions/:userId", async (req, res) => {
       }).populate(RIDE_POPULATE).limit(3);
       
       matchingRides.forEach(ride => {
-        if (!suggestions.some(s => s._id.toString() === ride._id.toString())) {
+        if (ride && ride._id && !suggestions.some(s => s._id.toString() === ride._id.toString())) {
           suggestions.push(ride);
         }
       });
