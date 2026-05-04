@@ -262,25 +262,27 @@ const CreateRide = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Date</label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary z-10" />
                     <Input
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
+                      onClick={(e) => e.currentTarget.showPicker()}
                       min={new Date().toISOString().split('T')[0]}
-                      className="pl-11 h-12 bg-secondary border-0 [color-scheme:dark]"
+                      className="pl-11 h-12 bg-secondary border-0 cursor-pointer hover:bg-secondary/80 transition-colors font-medium"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Time</label>
                   <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary z-10" />
                     <Input
                       type="time"
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
-                      className="pl-11 h-12 bg-secondary border-0"
+                      onClick={(e) => e.currentTarget.showPicker()}
+                      className="pl-11 h-12 bg-secondary border-0 cursor-pointer hover:bg-secondary/80 transition-colors font-medium"
                     />
                   </div>
                 </div>
