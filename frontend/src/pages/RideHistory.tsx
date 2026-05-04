@@ -157,7 +157,7 @@ const RideHistory = () => {
                         </h3>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-black text-primary tracking-tighter">₹{ride.price || 50}</p>
+                        <p className="text-xl font-black text-primary tracking-tighter">₹{ride.price}</p>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(ride.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>

@@ -870,7 +870,7 @@ const RideDetails = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Price per seat</p>
-                    <p className="text-2xl font-bold text-foreground">₹{ride.price !== undefined ? ride.price : 50}</p>
+                    <p className="text-2xl font-bold text-foreground">₹{ride.price}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -912,7 +912,7 @@ const RideDetails = () => {
                     onClick={() => {
                       const upiId = ride.upiId || ride.createdBy?.upiId;
                       const name = encodeURIComponent(ride.createdBy?.name || "Driver");
-                      const amount = ride.price || 50;
+                      const amount = ride.price;
                       const note = encodeURIComponent(`SmartPool ride to ${ride.toLocation}`);
                       const upiUrl = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
                       window.location.href = upiUrl;
@@ -970,7 +970,7 @@ const RideDetails = () => {
             ) : ride.seatsAvailable === 0 ? (
               "Fully Booked"
             ) : (
-              <>Request Seat • ₹{ride.price !== undefined ? ride.price : 50}</>
+              <>Request Seat • ₹{ride.price}</>
             )}
           </Button>
         </div>

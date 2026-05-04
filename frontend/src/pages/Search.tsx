@@ -35,7 +35,7 @@ const Search = () => {
         if (data.rides) {
           const mappedRides = data.rides.map((r: any) => {
             const dateObj = new Date(r.time);
-            const driverPrice = r.price !== undefined ? r.price : 50;
+            const driverPrice = r.price;
             
             let priceComparison = undefined;
             if (r.fromCoords && r.toCoords) {

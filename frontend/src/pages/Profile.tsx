@@ -417,7 +417,7 @@ const Profile = () => {
                       </h3>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-black text-primary tracking-tighter">₹{ride.price || 50}</p>
+                      <p className="text-xl font-black text-primary tracking-tighter">₹{ride.price}</p>
                     </div>
                   </div>
                   

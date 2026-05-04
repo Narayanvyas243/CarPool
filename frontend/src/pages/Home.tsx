@@ -47,7 +47,7 @@ const Home = () => {
       time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       availableSeats: r.seatsAvailable,
       totalSeats: r.totalSeats || 4,
-      pricePerSeat: r.price !== undefined ? r.price : 50,
+      pricePerSeat: r.price,
       driverGender: r.createdBy?.gender,
       driverId: r.createdBy?._id || r.createdBy || "",
       isPassenger: r.requests?.some((req: any) => 

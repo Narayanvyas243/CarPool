@@ -30,7 +30,7 @@ const CreateRide = () => {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState("4");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState("50");
   const { user } = useAuth();
   const [genderPreference, setGenderPreference] = useState("any");
   const [upiId, setUpiId] = useState(user?.upiId || "");
