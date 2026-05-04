@@ -301,7 +301,11 @@ const CreateRide = () => {
                       variant={isRecurring ? "default" : "outline"}
                       size="sm"
                       onClick={() => setIsRecurring(true)}
-                      className={isRecurring ? "bg-primary text-primary-foreground shadow-md" : "bg-background"}
+                      className={`flex-1 rounded-xl h-10 font-bold transition-all ${
+                        isRecurring 
+                          ? "bg-primary text-primary-foreground shadow-md border-primary" 
+                          : "bg-background text-muted-foreground border-border hover:bg-secondary"
+                      }`}
                     >
                       Yes
                     </Button>
@@ -310,7 +314,11 @@ const CreateRide = () => {
                       variant={!isRecurring ? "default" : "outline"}
                       size="sm"
                       onClick={() => setIsRecurring(false)}
-                      className={!isRecurring ? "bg-secondary text-foreground border-transparent shadow-sm" : "bg-background"}
+                      className={`flex-1 rounded-xl h-10 font-bold transition-all ${
+                        !isRecurring 
+                          ? "bg-primary text-primary-foreground shadow-md border-primary" 
+                          : "bg-background text-muted-foreground border-border hover:bg-secondary"
+                      }`}
                     >
                       No
                     </Button>
