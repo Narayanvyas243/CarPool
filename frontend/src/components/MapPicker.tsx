@@ -156,10 +156,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 setSelectedName("");
               });
 
-            // UX Improvement: Destinations don't need the precision modal
-            setTimeout(() => {
-               handleConfirmDirectly({ lat, lng });
-            }, 300);
+
           });
 
           // Final invalidation to be sure
@@ -263,8 +260,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         markerInstance.current = L.marker([campusOverride.lat, campusOverride.lng], { icon: customIcon }).addTo(mapInstance.current);
       }
 
-      // UX Improvement: Auto-confirm campus selection
-      setTimeout(() => handleConfirmDirectly(campusOverride, campusOverride.name), 500);
+
       return;
     }
 
@@ -294,7 +290,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         const namePart = data[0].display_name.split(',')[0];
         setSelectedName(namePart); // Preserve the specific name found in search
         
-        setTimeout(() => handleConfirmDirectly({ lat, lng: lon }, namePart), 500);
+
         
         mapInstance.current.setView([lat, lon], 15);
         
@@ -534,7 +530,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                   setSearchQuery(loc.name);
                   setSelectedName(loc.name); // Lock the name
                   
-                  setTimeout(() => handleConfirmDirectly(loc, loc.name), 500);
+
                   
                   if (mapInstance.current) {
                     mapInstance.current.setView([loc.lat, loc.lng], 15);
