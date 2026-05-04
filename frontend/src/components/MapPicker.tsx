@@ -156,7 +156,9 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 setSelectedName("");
               });
 
-
+            if (e.originalEvent) {
+              e.originalEvent.stopPropagation();
+            }
           });
 
           // Final invalidation to be sure
@@ -440,7 +442,6 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
         if (campus) {
           onLocationSelect({ address: campus.name, lat: targetCoords.lat, lng: targetCoords.lng });
-          setIsOpen(false);
           return;
         }
 
@@ -460,12 +461,12 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           : `${targetCoords.lat.toFixed(4)}, ${targetCoords.lng.toFixed(4)}`;
         onLocationSelect({ address: fallbackName, lat: targetCoords.lat, lng: targetCoords.lng });
       }
-      setIsOpen(false);
   };
 
   const handleConfirm = async () => {
     if (coords) {
       await handleConfirmDirectly(coords, selectedName || undefined);
+      setIsOpen(false);
     }
   };
 
@@ -477,7 +478,10 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           <span className="hidden sm:inline">Select on Map</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl h-[90vh] sm:h-[600px] flex flex-col p-0 overflow-hidden bg-white border shadow-2xl rounded-2xl">
+      <DialogContent 
+        onInteractOutside={(e) => e.preventDefault()}
+        className="sm:max-w-2xl h-[90vh] sm:h-[600px] flex flex-col p-0 overflow-hidden bg-white border shadow-2xl rounded-2xl"
+      >
         <DialogHeader className="p-4 border-b bg-slate-50">
           <DialogTitle className="flex items-center gap-2 text-slate-900 font-bold">
             <MapIcon className="h-5 w-5 text-primary" />
@@ -505,10 +509,10 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 </button>
               )}
             </div>
-            <Button variant="outline" onClick={handleLocateMe} disabled={isLocating} className="h-11 px-3 border-slate-200 shadow-sm" title="Locate Me">
+            <Button type="button" variant="outline" onClick={handleLocateMe} disabled={isLocating} className="h-11 px-3 border-slate-200 shadow-sm" title="Locate Me">
               {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4 text-slate-600" />}
             </Button>
-            <Button onClick={handleSearch} disabled={isSearching} className="px-6 h-11 font-bold shadow-md">
+            <Button type="button" onClick={handleSearch} disabled={isSearching} className="px-6 h-11 font-bold shadow-md">
               {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
             </Button>
           </div>
@@ -517,6 +521,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
             {QUICK_LOCATIONS.map((loc) => (
               <Button
                 key={loc.name}
+                type="button"
                 variant="secondary"
                 size="sm"
                 className="h-8 text-[11px] rounded-full bg-slate-100 hover:bg-primary hover:text-white transition-all text-slate-700 font-semibold"
@@ -563,6 +568,7 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
           {libStatus === 'ready' && (
             <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
               <Button 
+                type="button"
                 variant="secondary" 
                 size="sm" 
                 className="shadow-xl border-2 border-white/50 bg-white/90 backdrop-blur-md hover:bg-white font-bold text-[11px] h-9 px-3 text-slate-700"
@@ -636,8 +642,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="flex-1 h-12 rounded-2xl border-slate-200 font-bold text-slate-600" onClick={() => setIsConfirming(false)}>Adjust</Button>
-                  <Button className="flex-1 h-12 rounded-2xl font-bold shadow-xl shadow-primary/40 bg-primary hover:bg-primary/90 transition-all active:scale-95" onClick={handleConfirm}>Confirm Spot</Button>
+                  <Button type="button" variant="outline" className="flex-1 h-12 rounded-2xl border-slate-200 font-bold text-slate-600" onClick={() => setIsConfirming(false)}>Adjust</Button>
+                  <Button type="button" className="flex-1 h-12 rounded-2xl font-bold shadow-xl shadow-primary/40 bg-primary hover:bg-primary/90 transition-all active:scale-95" onClick={handleConfirm}>Confirm Spot</Button>
                 </div>
               </div>
             </div>
@@ -649,8 +655,8 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
             {coords ? `Point: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : "Select a point on the map"}
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="ghost" className="flex-1 sm:flex-none border" onClick={() => setIsOpen(false)}>Cancel</Button>
-            <Button className="flex-1 sm:flex-none px-12 font-bold shadow-lg h-11" onClick={handleConfirm} disabled={!coords}>
+            <Button type="button" variant="ghost" className="flex-1 sm:flex-none border" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button type="button" className="flex-1 sm:flex-none px-12 font-bold shadow-lg h-11" onClick={handleConfirm} disabled={!coords}>
               Confirm Location
             </Button>
           </div>
