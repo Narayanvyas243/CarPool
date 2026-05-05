@@ -136,8 +136,20 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
             }
             
             setErrorMsg(null);
+            
+            // Refinement: Only clear selectedName if the click is not extremely close to the current marker
+            // This prevents accidental clearing when trying to click the marker itself
+            if (markerInstance.current) {
+              const currentLatLng = markerInstance.current.getLatLng();
+              const dist = Math.sqrt(Math.pow(currentLatLng.lat - lat, 2) + Math.pow(currentLatLng.lng - lng, 2));
+              if (dist > 0.0005) { // Roughly 50 meters
+                setSelectedName("");
+              }
+            } else {
+              setSelectedName("");
+            }
+
             setCoords({ lat, lng });
-            setSelectedName(""); // Clear locked name on manual click
             
             if (markerInstance.current) {
               markerInstance.current.setLatLng(e.latlng);
@@ -289,7 +301,11 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
         }
 
         setCoords({ lat, lng: lon });
-        const namePart = data[0].display_name.split(',')[0];
+        
+        // Improve name extraction from search: Take up to 3 parts for better context (e.g. Teachers Colony, Govindgarh)
+        const addressParts = data[0].display_name.split(',').map((s: string) => s.trim());
+        const namePart = addressParts.slice(0, Math.min(3, addressParts.length)).join(', ');
+        
         setSelectedName(namePart); // Preserve the specific name found in search
         
 
@@ -388,44 +404,58 @@ const MapPicker = ({ onLocationSelect, title = "Select Location", initialLocatio
 
   // Helper to extract a human-readable name from Nominatim data
   const extractLocationName = (data: any, lat: number, lng: number): string => {
-    // Override with strict proximity check to fix OSM mismatches for universities
-    // Using 0.01 threshold which is roughly 1km radius
+    // 1. Proximity check for campuses first (UPES specifics)
     const nearbyCampus = QUICK_LOCATIONS.find(loc => {
       const dist = Math.sqrt(Math.pow(loc.lat - lat, 2) + Math.pow(loc.lng - lng, 2));
-      return dist < 0.01;
+      return dist < 0.005; // ~500m radius
     });
 
     if (nearbyCampus) return nearbyCampus.name;
 
     if (!data) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     
+    // 2. Intelligent Address Construction
     if (data.address) {
-      const addr = data.address;
-      // Priority for names
-      const mainPart = addr.amenity || addr.university || addr.building || addr.office || 
-                       addr.railway || addr.railway_station || addr.stadium || addr.mall || 
-                       addr.hospital || addr.aeroway || addr.tourism || addr.historic || 
-                       addr.leisure || addr.road || addr.street;
+      const a = data.address;
       
-      const areaPart = addr.suburb || addr.neighbourhood || addr.village || addr.town;
-      const cityPart = addr.city || addr.district || "Dehradun";
+      // Define priority parts from most specific to least specific
+      const specificParts = [
+        a.amenity, a.university, a.building, a.office, a.shop, a.tourism,
+        a.historic, a.railway, a.aeroway, a.leisure, a.stadium,
+        a.road, a.street, a.residential, a.neighbourhood, a.suburb, a.quarter
+      ].filter(Boolean);
 
-      if (mainPart) {
-        return areaPart ? `${mainPart}, ${areaPart}` : `${mainPart}, ${cityPart}`;
+      const areaParts = [
+        a.village, a.town, a.city_district, a.city || a.town || a.municipality || "Dehradun"
+      ].filter(Boolean);
+
+      if (specificParts.length > 0) {
+        // Return up to 2 specific parts + 1 area part if available
+        const main = specificParts.slice(0, 2).join(', ');
+        if (areaParts.length > 0 && !main.includes(areaParts[0])) {
+           return `${main}, ${areaParts[0]}`;
+        }
+        return main;
       }
       
-      if (areaPart && cityPart) {
-        return `${areaPart}, ${cityPart}`;
+      if (areaParts.length > 0) {
+        return areaParts.slice(0, 2).join(', ');
       }
     }
 
-    // Fallback to display_name formatting
+    // 3. Fallback to display_name formatting (cleaner than raw coords)
     if (data.display_name) {
-      const addressParts = data.display_name.split(',');
-      if (addressParts.length >= 2) {
-        return addressParts.slice(0, 2).map((s: string) => s.trim()).join(', ');
+      const addressParts = data.display_name.split(',').map((s: string) => s.trim());
+      // Filter out redundant parts like "India", "Uttarakhand", zip codes
+      const filteredParts = addressParts.filter((p: string) => 
+        !/^\d{6}$/.test(p) && 
+        !["India", "Uttarakhand", "Dehradun District"].includes(p)
+      );
+      
+      if (filteredParts.length >= 2) {
+        return filteredParts.slice(0, 2).join(', ');
       }
-      return data.display_name;
+      return filteredParts[0] || data.display_name;
     }
 
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
