@@ -37,6 +37,7 @@ const CreateRide = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPriceManuallyEdited, setIsPriceManuallyEdited] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -57,6 +58,13 @@ const CreateRide = () => {
   const suggestedPrice = fromCoords && toCoords 
     ? getFairPriceEstimate(calculateDistance(fromCoords.lat, fromCoords.lng, toCoords.lat, toCoords.lng))
     : null;
+
+  // Auto-fill price with suggested price when coordinates are selected
+  useEffect(() => {
+    if (suggestedPrice && !isPriceManuallyEdited) {
+      setPrice(suggestedPrice.toString());
+    }
+  }, [suggestedPrice, isPriceManuallyEdited]);
 
   const handleCreateRide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +104,17 @@ const CreateRide = () => {
       c && c.lat >= DDN_BOUNDS.minLat && c.lat <= DDN_BOUNDS.maxLat && 
       c.lng >= DDN_BOUNDS.minLng && c.lng <= DDN_BOUNDS.maxLng;
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create a ride. Please sign in again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      navigate("/login");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -111,7 +130,10 @@ const CreateRide = () => {
 
       const dateTimeString = new Date(`${date}T${time}`).toISOString();
 
-      const res = await fetch(getApiUrl('/api/rides/create'), {
+      const apiUrl = getApiUrl('/api/rides/create');
+      console.log(`[CreateRide] Fetching: ${apiUrl}`);
+
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -131,8 +153,17 @@ const CreateRide = () => {
         })
       });
 
+      if (!res.ok) {
+        let errorData;
+        try {
+          errorData = await res.json();
+        } catch (e) {
+          throw new Error(`HTTP Error ${res.status}: ${res.statusText}`);
+        }
+        throw new Error(errorData.message || 'Failed to create ride');
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create ride');
 
       toast({
         title: "Ride Created! 🚗",
@@ -140,9 +171,12 @@ const CreateRide = () => {
       });
       navigate("/");
     } catch (err: any) {
+      console.error("[CreateRide] Error:", err);
       toast({
         title: "Error creating ride",
-        description: err.message,
+        description: err.message === "Failed to fetch" 
+          ? "Connection failed. Please check if the server is running or your internet connection."
+          : err.message,
         variant: "destructive"
       });
     } finally {
@@ -370,7 +404,10 @@ const CreateRide = () => {
                     {suggestedPrice && (
                       <span 
                         className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition-colors"
-                        onClick={() => setPrice(suggestedPrice.toString())}
+                        onClick={() => {
+                          setPrice(suggestedPrice.toString());
+                          setIsPriceManuallyEdited(true); // Treat clicking the badge as a manual lock
+                        }}
                         title="Click to apply"
                       >
                         Smart Fare: ₹{suggestedPrice}
@@ -384,7 +421,10 @@ const CreateRide = () => {
                       min="0"
                       placeholder={suggestedPrice ? suggestedPrice.toString() : "50"}
                       value={price}
-                      onChange={(e) => setPrice(e.target.value)}
+                      onChange={(e) => {
+                        setPrice(e.target.value);
+                        setIsPriceManuallyEdited(true);
+                      }}
                       className="pl-11 h-12 bg-secondary border-0"
                     />
                   </div>

@@ -16,5 +16,7 @@ export const getApiUrl = (path: string) => {
   const baseUrl = API_BASE_URL.replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   
-  return `${baseUrl}${normalizedPath}`;
+  const fullUrl = `${baseUrl}${normalizedPath}`;
+  console.log(`[API] Generated URL: ${fullUrl} (Base: ${baseUrl || 'Vite Proxy'})`);
+  return fullUrl;
 };

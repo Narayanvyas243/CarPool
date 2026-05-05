@@ -31,6 +31,9 @@ const dayNameToNumber = {
 
 // CREATE RIDE
 router.post("/create", async (req, res) => {
+  console.log("[RideRoute] POST /create request received");
+  console.log("[RideRoute] Request Body Keys:", Object.keys(req.body));
+  
   try {
     const { createdBy, isRecurring, recurringDays } = req.body;
 
@@ -105,7 +108,12 @@ router.post("/create", async (req, res) => {
       // Normal single ride creation
       const ride = await Ride.create(req.body);
       const populatedRide = await Ride.findById(ride._id).populate(RIDE_POPULATE);
-      await scheduleRideLifecycleNotifications(populatedRide);
+      
+      try {
+        await scheduleRideLifecycleNotifications(populatedRide);
+      } catch (notifError) {
+        console.error("[RideRoute] Notification scheduling failed, but ride was created:", notifError.message);
+      }
 
       return res.status(201).json({
         message: "Ride created successfully",
@@ -114,6 +122,7 @@ router.post("/create", async (req, res) => {
     }
 
   } catch (error) {
+    console.error("[RideRoute] Error in /create:", error);
     res.status(500).json({
       message: "Error creating ride",
       error: error.message
